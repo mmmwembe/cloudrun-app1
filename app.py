@@ -20,6 +20,10 @@ SESSION_ID = 'eb9db0ca54e94dbc82cffdab497cde13'
 SAMPLE_ID = '8c583173bc904ce596d5de69ac432acb'
 ALLOWED_EXTENSIONS = {'pdf'}
 
+UPLOAD_DIR = os.path.join(os.getcwd(), 'temp_uploads')
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
