@@ -1,0 +1,20 @@
+/* Michael Mwembeshi 7/4/2021
+   Based on: https://www.youtube.com/watch?v=mCy52I4exTU&list=PL7xXhpv10LqJPlC8JC8esoRfRMtqKl7iB
+*/
+.mytable{
+	border-spacing: 0;
+	margin: 1rem;
+	background-color: f5f5f5;
+    width:100%;
+}
+
+.mytable__row:nth-child(even) {
+	background-color: #e5e5e5;
+}
+.mytable__header{
+	text-align: left;
+    background-color: powderblue;
+}
+.mytable__cell{
+	padding: 10px;
+}
