@@ -10,10 +10,6 @@ load_dotenv()
 # Get the Google service account JSON from environment variable
 secret_json = os.getenv('GOOGLE_SECRET_JSON')
 
-
-
-
-
 def save_file_to_bucket(artifact_url, session_id, sample_id, bucket_name, subdir="papers", subsubdirs=["pdf","word","images","csv","text"]):
     # Determine the subsubdir based on the file extension
     if artifact_url.endswith(".docx"):
