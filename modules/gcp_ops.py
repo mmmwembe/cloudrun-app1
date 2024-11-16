@@ -11,9 +11,7 @@ load_dotenv()
 secret_json = os.getenv('GOOGLE_SECRET_JSON')
 
 
-bucket_name ='flask-test-bucket-mmm'
-session_id = 'eb9db0ca54e94dbc82cffdab497cde13'
-sample_id = '8c583173bc904ce596d5de69ac432acb'
+
 
 
 def save_file_to_bucket(artifact_url, session_id, sample_id, bucket_name, subdir="papers", subsubdirs=["pdf","word","images","csv","text"]):
