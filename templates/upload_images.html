@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upload Papers</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
         body {
             background-color: #CFD8DC;
@@ -42,6 +42,7 @@
             align-items: center;
         }
         
+        /* Sidebar Styles */
         .sidebar {
             height: 100%;
             width: 250px;
@@ -91,6 +92,7 @@
             transition: 0.3s;
         }
         
+        /* Drag and drop styles with original theme colors */
         .drag-drop-zone {
             border: 2px dashed #2c3e50;
             border-radius: 10px;
@@ -126,107 +128,110 @@
         .remove-file {
             color: #e74c3c;
             cursor: pointer;
+            transition: color 0.3s ease;
         }
         .remove-file:hover {
             color: #c0392b;
         }
         
-        .progress-container {
+        /* Spinner CSS */
+        .spinner {
             display: none;
+            border: 16px solid #f3f3f3;
+            border-top: 16px solid green;
+            border-radius: 50%;
+            width: 120px;
+            height: 120px;
+            animation: spin 2s linear infinite;
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             z-index: 1000;
-            text-align: center;
-            background-color: rgba(255, 255, 255, 0.95);
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .spinner {
-            border: 8px solid #f3f3f3;
-            border-top: 8px solid #28a745;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
-        }
-        .progress-text {
-            color: #28a745;
-            font-weight: bold;
-            margin-top: 10px;
         }
         
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .processing-status {
-            display: none;
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 10px;
-            background-color: rgba(255, 255, 255, 0.9);
-        }
-        .status-item {
-            margin: 5px 0;
-            padding: 5px;
-            border-radius: 5px;
-        }
-        .status-success {
-            background-color: rgba(40, 167, 69, 0.1);
-            color: #28a745;
-        }
-        .status-error {
-            background-color: rgba(220, 53, 69, 0.1);
-            color: #dc3545;
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
         }
     </style>
 </head>
 <body>
     <div class="sidebar">
-        <img src="/static/diatomhub-images/logo/diatom_hub_5e.svg" alt="Logo" class="sidebar-logo">
+        <img src="/static/diatomhub-images/logo/diatom_hub_5e.svg" alt="DiatomHub Logo" class="sidebar-logo">
         <ul class="sidebar-nav">
-            <li><a href="#"><i class="fas fa-home me-2"></i>Home</a></li>
-            <li><a href="#"><i class="fas fa-upload me-2"></i>Upload</a></li>
+            <!-- <li><a href="#" onclick="dashboard()">Dashboard</a></li>
+            <li><a href="#" onclick="my_reports()">Samples & Reports</a></li>
+            <li><a href="#" onclick="aboutPage()">About</a></li>
+            <li><a href="#" onclick="internal_contact_us()">Questions & Feedback</a></li>
+            <li><a href="#" onclick="signout()">Sign Out</a></li> -->
         </ul>
     </div>
 
-    <div class="content">
-        <div class="container mt-5 text-center" style="max-width: 600px; margin: 0 auto;">
-            <h1 class="mb-4">Upload Papers</h1>
-            
-            <div class="row mb-4">
-                <div class="col">
-                    <h5>Upload PDF files for processing</h5>
+    <div class="container mt-5 text-center" style="width: 30%;">
+        <h1 class="mb-4">Upload Papers</h1>
+        
+        <div class="row mb-4">
+            <div class="col">
+                <h5>Sample Description</h5>
+            </div>
+        </div>
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for message in messages %}
+                        <div class="alert alert-info">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" enctype="multipart/form-data" id="uploadForm">
+            <div class="drag-drop-zone" id="dropZone">
+                <i class="fas fa-cloud-upload-alt fa-3x mb-3"></i>
+                <p class="mb-0">Drag and drop PDF files here or click to select</p>
+                <input type="file" class="d-none" id="fileInput" name="files[]" multiple accept=".pdf">
+            </div>
+            <div class="selected-files d-none" id="selectedFiles">
+                <!-- Selected files will be listed here -->
+            </div>
+            <button type="submit" class="btn btn-primary" id="uploadButton" disabled>
+                Upload Files
+            </button>
+        </form>
+    </div>
+
+    <div class="container mt-5">
+        {% if files %}
+        <h2>Uploaded Files ({{ files|length }})</h2>
+        <div class="row">
+            {% for file in files %}
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-file-pdf text-danger me-2"></i>
+                            {{ file.name }}
+                        </h5>
+                        <p class="card-text">
+                            Size: {{ file.size }}<br>
+                            Updated: {{ file.updated }}
+                        </p>
+                        <a href="{{ url_for('preview_pdf', blob_name=file.blob_name) }}" 
+                           class="btn btn-primary"
+                           target="_blank">
+                            <i class="fas fa-eye"></i> View PDF
+                        </a>
+                    </div>
                 </div>
             </div>
-
-            <div id="flashMessages"></div>
-
-            <form method="POST" enctype="multipart/form-data" id="uploadForm" action="{{ url_for('upload_file') }}">
-                <div class="drag-drop-zone" id="dropZone">
-                    <i class="fas fa-cloud-upload-alt fa-3x mb-3"></i>
-                    <p class="mb-0">Drag and drop PDF files here or click to select</p>
-                    <input type="file" class="d-none" id="fileInput" name="files[]" multiple accept=".pdf">
-                </div>
-                <div class="selected-files d-none" id="selectedFiles"></div>
-                <button type="submit" class="btn btn-primary" id="uploadButton" disabled>
-                    Upload Files
-                </button>
-            </form>
-
-            <div class="processing-status" id="processingStatus"></div>
+            {% endfor %}
         </div>
+        {% endif %}
     </div>
 
-    <div class="progress-container" id="progressContainer">
-        <div class="spinner"></div>
-        <div class="progress-text" id="progressText">Processing files...</div>
-    </div>
+    <div id="spinner" class="spinner"></div>
 
     <script>
         const dropZone = document.getElementById('dropZone');
@@ -234,9 +239,6 @@
         const selectedFiles = document.getElementById('selectedFiles');
         const uploadButton = document.getElementById('uploadButton');
         const uploadForm = document.getElementById('uploadForm');
-        const progressContainer = document.getElementById('progressContainer');
-        const progressText = document.getElementById('progressText');
-        const processingStatus = document.getElementById('processingStatus');
         
         // Prevent default drag behaviors
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -255,10 +257,12 @@
 
         // Handle dropped files
         dropZone.addEventListener('drop', handleDrop, false);
+        
+        // Handle clicked files
         dropZone.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', handleFiles);
 
-        function preventDefaults(e) {
+        function preventDefaults (e) {
             e.preventDefault();
             e.stopPropagation();
         }
@@ -281,133 +285,68 @@
             const files = [...e.target.files];
             fileInput.files = e.target.files;
             
+            // Clear previous previews
             selectedFiles.innerHTML = '';
             
+            // Show selected files div if there are files
             if (files.length > 0) {
                 selectedFiles.classList.remove('d-none');
                 uploadButton.disabled = false;
-
-                files.forEach(file => {
-                    const preview = document.createElement('div');
-                    preview.className = 'file-preview';
-                    preview.innerHTML = `
-                        <div>
-                            <i class="fas fa-file-pdf text-danger me-2"></i>
-                            ${file.name}
-                        </div>
-                        <div>
-                            <span class="text-muted me-3">${(file.size / 1024 / 1024).toFixed(2)} MB</span>
-                            <i class="fas fa-times remove-file"></i>
-                        </div>
-                    `;
-
-                    // Add remove file functionality
-                    preview.querySelector('.remove-file').addEventListener('click', () => {
-                        preview.remove();
-                        if (selectedFiles.children.length === 0) {
-                            selectedFiles.classList.add('d-none');
-                            uploadButton.disabled = true;
-                        }
-                    });
-
-                    selectedFiles.appendChild(preview);
-                });
             } else {
                 selectedFiles.classList.add('d-none');
                 uploadButton.disabled = true;
             }
-        }
-
-        function updateStatus(filename, status, message, details = null) {
-            const statusElement = document.createElement('div');
-            statusElement.className = `status-item ${status === 'success' ? 'status-success' : 'status-error'}`;
-            statusElement.innerHTML = `
-                <i class="fas ${status === 'success' ? 'fa-check' : 'fa-times'} me-2"></i>
-                ${filename}: ${message}
-            `;
-
-            if (details && status === 'success') {
-                const detailsElement = document.createElement('div');
-                detailsElement.className = 'ms-4 mt-2 text-start';
-                detailsElement.innerHTML = `
-                    <small>
-                        <div>Pages extracted: ${details.pages || 0}</div>
-                        <div>Images extracted: ${details.images || 0}</div>
-                    </small>
-                `;
-                statusElement.appendChild(detailsElement);
-            }
-
-            processingStatus.appendChild(statusElement);
-        }
-
-        uploadForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
             
-            const formData = new FormData(uploadForm);
-            progressContainer.style.display = 'block';
-            progressText.textContent = 'Uploading files...';
-            processingStatus.style.display = 'block';
-            processingStatus.innerHTML = '';
+            // Add file previews
+            files.forEach(file => {
+                const preview = document.createElement('div');
+                preview.className = 'file-preview';
+                preview.innerHTML = `
+                    <div>
+                        <i class="fas fa-file-pdf text-danger me-2"></i>
+                        ${file.name}
+                    </div>
+                    <div>
+                        <span class="text-muted me-3">${(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                        <i class="fas fa-times remove-file"></i>
+                    </div>
+                `;
+                selectedFiles.appendChild(preview);
+            });
+        }
 
-            try {
-                // Upload files
-                const uploadResponse = await fetch('/api/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (!uploadResponse.ok) {
-                    throw new Error(`Upload failed: ${uploadResponse.statusText}`);
-                }
-
-                const uploadResult = await uploadResponse.json();
-
-                if (uploadResult.status === 'success') {
-                    progressText.textContent = 'Processing PDFs...';
-                    
-                    // Process each uploaded file
-                    for (const file of uploadResult.files) {
-                        try {
-                            const processResponse = await fetch('/api/process', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({ filename: file.filename })
-                            });
-
-                            if (!processResponse.ok) {
-                                throw new Error(`Processing failed: ${processResponse.statusText}`);
-                            }
-
-                            const processResult = await processResponse.json();
-                            
-                            updateStatus(
-                                file.original_filename,
-                                processResult.status,
-                                processResult.status === 'success' ? 'Successfully processed' : processResult.message,
-                                processResult.details
-                            );
-                        } catch (error) {
-                            updateStatus(file.original_filename, 'error', error.message);
-                            console.error('Processing error:', error);
-                        }
-                    }
-
-                    progressText.textContent = 'Processing complete!';
-                    setTimeout(() => {
-                        progressContainer.style.display = 'none';
-                        // Optionally reload or redirect
-                        // window.location.href = '/dashboard';
-                    }, 2000);
-                }
-            } catch (error) {
-                progressText.textContent = 'Error processing files';
-                updateStatus('Upload', 'error', error.message);
-                console.error('Error:', error);
-            }
+        // Show spinner during form submission
+        uploadForm.addEventListener('submit', function() {
+            document.getElementById('spinner').style.display = 'block';
         });
+
+        // Hide spinner when page loads
+        window.addEventListener('load', function() {
+            document.getElementById('spinner').style.display = 'none';
+        });
+
+        // Navigation functions
+        function dashboard() {
+            window.location.href = "";
+        }
+
+        function my_reports() {
+            window.location.href = "";
+        }
+
+        function aboutPage() {
+            window.location.href = "";
+        }
+
+        function internal_contact_us() {
+            window.location.href = "";
+        }
+
+        function signout() {
+            window.location.href = "";
+        }
     </script>
 </body>
 </html>
+
+
