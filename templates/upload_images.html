@@ -207,7 +207,7 @@
 
             <div id="flashMessages"></div>
 
-            <form method="POST" enctype="multipart/form-data" id="uploadForm">
+            <form method="POST" enctype="multipart/form-data" id="uploadForm" action="{{ url_for('upload_file') }}">
                 <div class="drag-drop-zone" id="dropZone">
                     <i class="fas fa-cloud-upload-alt fa-3x mb-3"></i>
                     <p class="mb-0">Drag and drop PDF files here or click to select</p>
