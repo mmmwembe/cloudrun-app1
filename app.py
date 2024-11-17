@@ -5,7 +5,7 @@ from werkzeug.utils import secure_filename
 from google.cloud import storage
 import json
 from dotenv import load_dotenv
-from modules.gcp_ops import save_file_to_bucket, get_public_urls2
+# from modules.gcp_ops import save_file_to_bucket, get_public_urls2
 # save_file_to_bucket(artifact_url, session_id, file_hash_num, bucket_name, subdir="papers"
 
 load_dotenv()
@@ -129,12 +129,12 @@ def upload_file():
                 
                 try:
                     file.save(temp_path)
-                    # blob_name = save_file_to_bucket(temp_path, filename)
-                    file_public_url = save_file_to_bucket(temp_path, SESSION_ID, FILE_HASH_NUM, BUCKET_NAME, subdir="papers")
+                    blob_name = save_file_to_bucket(temp_path, filename)
+                    #file_public_url = save_file_to_bucket(temp_path, SESSION_ID, FILE_HASH_NUM, BUCKET_NAME, subdir="papers")
                     
                     os.remove(temp_path)
                     
-                    if file_public_url: #blob_name:
+                    if blob_name:
                         upload_count += 1
                     else:
                         error_count += 1
@@ -153,8 +153,8 @@ def upload_file():
         
         return redirect(url_for('upload_file'))
 
-    #files = get_uploaded_files()
-    files = get_public_urls2(BUCKET_NAME, SESSION_ID, FILE_HASH_NUM)
+    files = get_uploaded_files()
+    #files = get_public_urls2(BUCKET_NAME, SESSION_ID, FILE_HASH_NUM)
     return render_template('upload_images.html', files=files)
 
 if __name__ == '__main__':
