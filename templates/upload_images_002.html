@@ -92,7 +92,7 @@
             transition: 0.3s;
         }
         
-        /* Drag and drop styles */
+        /* Drag and drop styles with original theme colors */
         .drag-drop-zone {
             border: 2px dashed #2c3e50;
             border-radius: 10px;
@@ -128,61 +128,31 @@
         .remove-file {
             color: #e74c3c;
             cursor: pointer;
+            transition: color 0.3s ease;
         }
         .remove-file:hover {
             color: #c0392b;
         }
         
-        /* Progress Spinners */
-        .progress-container {
+        /* Spinner CSS */
+        .spinner {
             display: none;
+            border: 16px solid #f3f3f3;
+            border-top: 16px solid green;
+            border-radius: 50%;
+            width: 120px;
+            height: 120px;
+            animation: spin 2s linear infinite;
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             z-index: 1000;
-            text-align: center;
-        }
-        .spinner {
-            border: 8px solid #f3f3f3;
-            border-top: 8px solid #28a745;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
-        }
-        .progress-text {
-            color: #28a745;
-            font-weight: bold;
-            margin-top: 10px;
         }
         
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Processing Status */
-        .processing-status {
-            display: none;
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 10px;
-            background-color: rgba(255, 255, 255, 0.9);
-        }
-        .status-item {
-            margin: 5px 0;
-            padding: 5px;
-            border-radius: 5px;
-        }
-        .status-success {
-            background-color: rgba(40, 167, 69, 0.1);
-            color: #28a745;
-        }
-        .status-error {
-            background-color: rgba(220, 53, 69, 0.1);
-            color: #dc3545;
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
         }
     </style>
 </head>
@@ -223,19 +193,45 @@
                 <p class="mb-0">Drag and drop PDF files here or click to select</p>
                 <input type="file" class="d-none" id="fileInput" name="files[]" multiple accept=".pdf">
             </div>
-            <div class="selected-files d-none" id="selectedFiles"></div>
+            <div class="selected-files d-none" id="selectedFiles">
+                <!-- Selected files will be listed here -->
+            </div>
             <button type="submit" class="btn btn-primary" id="uploadButton" disabled>
                 Upload Files
             </button>
         </form>
-
-        <div class="processing-status" id="processingStatus"></div>
     </div>
 
-    <div class="progress-container" id="progressContainer">
-        <div class="spinner"></div>
-        <div class="progress-text" id="progressText">Processing files...</div>
+    <div class="container mt-5">
+        {% if files %}
+        <h2>Uploaded Files ({{ files|length }})</h2>
+        <div class="row">
+            {% for file in files %}
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-file-pdf text-danger me-2"></i>
+                            {{ file.name }}
+                        </h5>
+                        <p class="card-text">
+                            Size: {{ file.size }}<br>
+                            Updated: {{ file.updated }}
+                        </p>
+                        <a href="{{ url_for('preview_pdf', blob_name=file.blob_name) }}" 
+                           class="btn btn-primary"
+                           target="_blank">
+                            <i class="fas fa-eye"></i> View PDF
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
+
+    <div id="spinner" class="spinner"></div>
 
     <script>
         const dropZone = document.getElementById('dropZone');
@@ -243,9 +239,6 @@
         const selectedFiles = document.getElementById('selectedFiles');
         const uploadButton = document.getElementById('uploadButton');
         const uploadForm = document.getElementById('uploadForm');
-        const progressContainer = document.getElementById('progressContainer');
-        const progressText = document.getElementById('progressText');
-        const processingStatus = document.getElementById('processingStatus');
         
         // Prevent default drag behaviors
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
@@ -264,10 +257,12 @@
 
         // Handle dropped files
         dropZone.addEventListener('drop', handleDrop, false);
+        
+        // Handle clicked files
         dropZone.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', handleFiles);
 
-        function preventDefaults(e) {
+        function preventDefaults (e) {
             e.preventDefault();
             e.stopPropagation();
         }
@@ -290,8 +285,10 @@
             const files = [...e.target.files];
             fileInput.files = e.target.files;
             
+            // Clear previous previews
             selectedFiles.innerHTML = '';
             
+            // Show selected files div if there are files
             if (files.length > 0) {
                 selectedFiles.classList.remove('d-none');
                 uploadButton.disabled = false;
@@ -300,6 +297,7 @@
                 uploadButton.disabled = true;
             }
             
+            // Add file previews
             files.forEach(file => {
                 const preview = document.createElement('div');
                 preview.className = 'file-preview';
@@ -317,59 +315,14 @@
             });
         }
 
-        uploadForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(uploadForm);
-            progressContainer.style.display = 'block';
-            progressText.textContent = 'Uploading files...';
-            processingStatus.style.display = 'block';
-            processingStatus.innerHTML = '';
+        // Show spinner during form submission
+        uploadForm.addEventListener('submit', function() {
+            document.getElementById('spinner').style.display = 'block';
+        });
 
-            try {
-                // Upload files
-                const uploadResponse = await fetch('/', {
-                    method: 'POST',
-                    body: formData
-                });
-                const uploadResult = await uploadResponse.json();
-
-                if (uploadResult.status === 'success') {
-                    progressText.textContent = 'Processing PDFs...';
-                    
-                    // Process each uploaded file
-                    for (const file of uploadResult.files) {
-                        const processResponse = await fetch('/process_pdf', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify(file)
-                        });
-                        const processResult = await processResponse.json();
-
-                        // Update status
-                        const statusElement = document.createElement('div');
-                        statusElement.className = `status-item ${processResult.status === 'success' ? 'status-success' : 'status-error'}`;
-                        statusElement.innerHTML = `
-                            <i class="fas ${processResult.status === 'success' ? 'fa-check' : 'fa-times'} me-2"></i>
-                            ${file.hash}: ${processResult.status === 'success' ? 'Processed successfully' : processResult.message}
-                        `;
-                        processingStatus.appendChild(statusElement);
-                    }
-
-                    progressText.textContent = 'Processing complete!';
-                    setTimeout(() => {
-                        progressContainer.style.display = 'none';
-                        location.reload();
-                    }, 2000);
-                } else {
-                    throw new Error('Upload failed');
-                }
-            } catch (error) {
-                progressText.textContent = 'Error processing files';
-                console.error('Error:', error);
-            }
+        // Hide spinner when page loads
+        window.addEventListener('load', function() {
+            document.getElementById('spinner').style.display = 'none';
         });
 
         // Navigation functions
@@ -395,3 +348,5 @@
     </script>
 </body>
 </html>
+
+
