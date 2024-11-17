@@ -198,15 +198,14 @@
         </ul>
     </div>
 
-    <div class="content">
-        <div class="container mt-5 text-center" style="max-width: 600px; margin: 0 auto;">
-            <h1 class="mb-4">Upload Papers</h1>
-            
-            <div class="row mb-4">
-                <div class="col">
-                    <h5>Sample Description</h5>
-                </div>
+    <div class="container mt-5 text-center" style="width: 30%;">
+        <h1 class="mb-4">Upload Papers</h1>
+        
+        <div class="row mb-4">
+            <div class="col">
+                <h5>Sample Description</h5>
             </div>
+        </div>
 
         {% with messages = get_flashed_messages() %}
             {% if messages %}
@@ -231,7 +230,6 @@
         </form>
 
         <div class="processing-status" id="processingStatus"></div>
-        </div>
     </div>
 
     <div class="progress-container" id="progressContainer">
@@ -341,45 +339,23 @@
                     
                     // Process each uploaded file
                     for (const file of uploadResult.files) {
-                        const statusElement = document.createElement('div');
-                        statusElement.className = 'status-item';
-                        statusElement.innerHTML = `
-                            <i class="fas fa-spinner fa-spin me-2"></i>
-                            Processing ${file.original_filename}...
-                        `;
-                        processingStatus.appendChild(statusElement);
-
-                        try {
-                            const processResponse = await fetch('/process_pdf', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify(file)
-                            });
-                            const processResult = await processResponse.json();
+                        const processResponse = await fetch('/process_pdf', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(file)
+                        });
+                        const processResult = await processResponse.json();
 
                         // Update status
                         const statusElement = document.createElement('div');
                         statusElement.className = `status-item ${processResult.status === 'success' ? 'status-success' : 'status-error'}`;
                         statusElement.innerHTML = `
                             <i class="fas ${processResult.status === 'success' ? 'fa-check' : 'fa-times'} me-2"></i>
-                            ${file.original_filename}: ${processResult.status === 'success' ? 
-                                `Successfully processed ${processResult.pages?.length || 0} pages` : 
-                                processResult.message}
+                            ${file.hash}: ${processResult.status === 'success' ? 'Processed successfully' : processResult.message}
                         `;
-
-                        if (processResult.status === 'success') {
-                            const details = document.createElement('div');
-                            details.className = 'ms-4 mt-2 text-start';
-                            details.innerHTML = `
-                                <small>
-                                    <div>Pages extracted: ${processResult.pages?.length || 0}</div>
-                                    <div>Images extracted: ${processResult.pages?.filter(p => p.contains_figure).length || 0}</div>
-                                </small>
-                            `;
-                            statusElement.appendChild(details);
-                        }
+                        processingStatus.appendChild(statusElement);
                     }
 
                     progressText.textContent = 'Processing complete!';

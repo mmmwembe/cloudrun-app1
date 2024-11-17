@@ -1,3 +1,4 @@
+# app.py
 import os
 import hashlib
 from flask import Flask, render_template, request, flash, redirect, url_for, Response, jsonify
@@ -7,7 +8,6 @@ import json
 from dotenv import load_dotenv
 import pandas as pd
 import fitz  # PyMuPDF
-from urllib.parse import urlparse
 
 load_dotenv()
 
@@ -47,14 +47,6 @@ def get_default_citation():
         'url': "http://pubs.usgs.gov/of/2012/1163/"
     }
 
-def get_blob_path_from_url(url):
-    """Extract the blob path from a GCS public URL."""
-    parsed_url = urlparse(url)
-    path = parsed_url.path
-    # Remove the bucket name from the path
-    parts = path.split('/')
-    return '/'.join(parts[2:])  # Skip the empty first part and bucket name
-
 def upload_file_to_bucket(local_file_path, filename, bucket_name):
     try:
         client = get_storage_client()
@@ -68,8 +60,7 @@ def upload_file_to_bucket(local_file_path, filename, bucket_name):
         return {
             'file_path_public_url': blob.public_url,
             'full_citation': get_default_citation(),
-            'hash': file_hash,
-            'original_filename': filename
+            'hash': file_hash
         }
     except Exception as e:
         print(f"Error uploading file: {e}")
@@ -80,81 +71,67 @@ def extract_and_save_pages(pdf_info):
         client = get_storage_client()
         results = []
         
-        # Get the original PDF blob name from the URL
-        original_blob_path = get_blob_path_from_url(pdf_info['file_path_public_url'])
-        source_bucket = client.bucket(BUCKET_ORIGINAL_PAPERS)
-        
-        # Download the PDF to a temporary file
+        # Download the PDF
         pdf_path = os.path.join(UPLOAD_DIR, f"temp_{pdf_info['hash']}.pdf")
-        source_blob = source_bucket.blob(original_blob_path)
-        source_blob.download_to_filename(pdf_path)
+        storage.Blob(
+            pdf_info['file_path_public_url'].split('/')[-1],
+            client.bucket(BUCKET_ORIGINAL_PAPERS)
+        ).download_to_filename(pdf_path)
         
         # Process PDF pages
         pdf_document = fitz.open(pdf_path)
         for page_idx in range(len(pdf_document)):
             page = pdf_document[page_idx]
             
-            # Create page filename using parent filename
-            base_filename = os.path.splitext(pdf_info['original_filename'])[0]
-            page_filename = f"{base_filename}_page_{page_idx+1}.pdf"
+            # Save extracted page
+            page_filename = f"{pdf_info['hash']}_page_{page_idx+1}.pdf"
             page_path = os.path.join(UPLOAD_DIR, page_filename)
             
-            # Save individual page
             sub_pdf = fitz.open()
             sub_pdf.insert_pdf(pdf_document, from_page=page_idx, to_page=page_idx)
             sub_pdf.save(page_path)
             
-            # Upload extracted page to split pages bucket
+            # Upload extracted page
             split_bucket = client.bucket(BUCKET_SPLIT_PAGES)
             page_blob_name = f"extracted_pdfs/{pdf_info['hash']}/{page_filename}"
             page_blob = split_bucket.blob(page_blob_name)
             page_blob.upload_from_filename(page_path)
             
-            # Handle images if present
+            # Check for images
             image_url = None
             contains_figure = False
-            images = page.get_images()
-            
-            if images:
+            if len(page.get_images()) > 0:
                 contains_figure = True
-                img = images[0]  # Get first image
+                # Save the first image found
+                img = page.get_images()[0]
                 pix = pdf_document.extract_image(img[0])
-                img_filename = f"{base_filename}_page_{page_idx+1}_image.jpg"
-                img_path = os.path.join(UPLOAD_DIR, img_filename)
-                
+                img_path = os.path.join(UPLOAD_DIR, f"{page_filename}_image.jpg")
                 with open(img_path, 'wb') as img_file:
                     img_file.write(pix["image"])
                 
-                # Upload image to extracted images bucket
+                # Upload image
                 img_bucket = client.bucket(BUCKET_EXTRACTED_IMAGES)
-                img_blob_name = f"{pdf_info['hash']}/{img_filename}"
+                img_blob_name = f"{pdf_info['hash']}/{page_filename}_image.jpg"
                 img_blob = img_bucket.blob(img_blob_name)
                 img_blob.upload_from_filename(img_path)
                 image_url = img_blob.public_url
                 
                 os.remove(img_path)
             
-            # Add page info to results
             results.append({
                 'file_path_public_url': page_blob.public_url,
                 'page_index': page_idx,
-                'page_number': page_idx + 1,
+                'page_number': page_idx + 1,  # Assuming sequential numbering
                 'contains_figure': contains_figure,
                 'figure_name': f"Figure {page_idx + 1}" if contains_figure else "",
                 'image_public_url': image_url,
-                'child_pdf_public_url': page_blob.public_url,
-                'parent_hash': pdf_info['hash'],
-                'parent_filename': pdf_info['original_filename']
+                'child_pdf_public_url': page_blob.public_url
             })
             
             os.remove(page_path)
-            sub_pdf.close()
         
         pdf_document.close()
         os.remove(pdf_path)
-        
-        # Update tracker CSV
-        save_to_tracker_csv(results)
         
         return results
     except Exception as e:
@@ -163,27 +140,14 @@ def extract_and_save_pages(pdf_info):
 
 def save_to_tracker_csv(extracted_pages_info):
     try:
-        # Create DataFrame from new pages
-        new_df = pd.DataFrame(extracted_pages_info)
+        df = pd.DataFrame(extracted_pages_info)
         
-        # Get existing CSV if it exists
+        # Save to CSV in the designated bucket
         client = get_storage_client()
         bucket = client.bucket(BUCKET_PAPER_TRACKER_CSV)
+        
         csv_blob = bucket.blob('papers-tracker.csv')
-        
-        try:
-            # Try to download and read existing CSV
-            existing_content = csv_blob.download_as_text()
-            existing_df = pd.read_csv(pd.StringIO(existing_content))
-            
-            # Combine existing and new data
-            combined_df = pd.concat([existing_df, new_df], ignore_index=True)
-        except Exception:
-            # If no existing CSV or error reading it, use only new data
-            combined_df = new_df
-        
-        # Upload updated CSV
-        csv_blob.upload_from_string(combined_df.to_csv(index=False))
+        csv_blob.upload_from_string(df.to_csv(index=False))
         
         return True
     except Exception as e:
@@ -196,6 +160,7 @@ def process_pdf():
         file_info = request.get_json()
         extracted_pages = extract_and_save_pages(file_info)
         if extracted_pages:
+            save_to_tracker_csv(extracted_pages)
             return jsonify({'status': 'success', 'pages': extracted_pages})
         return jsonify({'status': 'error', 'message': 'Failed to process PDF'})
     except Exception as e:
