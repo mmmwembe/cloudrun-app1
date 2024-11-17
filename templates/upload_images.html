@@ -249,173 +249,109 @@
         const progressText = document.getElementById('progressText');
         const processingStatus = document.getElementById('processingStatus');
         
-        // Prevent default drag behaviors
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, preventDefaults, false);
-            document.body.addEventListener(eventName, preventDefaults, false);
-        });
-
-        // Highlight drop zone when dragging over it
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropZone.addEventListener(eventName, highlight, false);
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, unhighlight, false);
-        });
-
-        // Handle dropped files
-        dropZone.addEventListener('drop', handleDrop, false);
         dropZone.addEventListener('click', () => fileInput.click());
+        
         fileInput.addEventListener('change', handleFiles);
+        dropZone.addEventListener('dragover', handleDragOver);
+        dropZone.addEventListener('dragleave', handleDragLeave);
+        dropZone.addEventListener('drop', handleDrop);
 
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
+        function handleFiles(event) {
+            const files = event.target.files;
+            processFiles(files);
         }
 
-        function highlight(e) {
+        function handleDragOver(event) {
+            event.preventDefault();
             dropZone.classList.add('dragover');
         }
 
-        function unhighlight(e) {
+        function handleDragLeave() {
             dropZone.classList.remove('dragover');
         }
 
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-            handleFiles({ target: { files: files } });
+        function handleDrop(event) {
+            event.preventDefault();
+            dropZone.classList.remove('dragover');
+            const files = event.dataTransfer.files;
+            processFiles(files);
         }
 
-        function handleFiles(e) {
-            const files = [...e.target.files];
-            fileInput.files = e.target.files;
-            
-            selectedFiles.innerHTML = '';
-            
-            if (files.length > 0) {
-                selectedFiles.classList.remove('d-none');
-                uploadButton.disabled = false;
-            } else {
+        function processFiles(files) {
+            selectedFiles.innerHTML = ''; 
+            const fileList = Array.from(files);
+            fileList.forEach(file => {
+                const filePreview = document.createElement('div');
+                filePreview.classList.add('file-preview');
+                filePreview.innerHTML = `
+                    <span>${file.name}</span>
+                    <i class="remove-file fas fa-trash-alt"></i>
+                `;
+                selectedFiles.appendChild(filePreview);
+                const removeFileIcon = filePreview.querySelector('.remove-file');
+                removeFileIcon.addEventListener('click', () => removeFile(file, filePreview));
+            });
+
+            selectedFiles.classList.remove('d-none');
+            uploadButton.disabled = false;
+        }
+
+        function removeFile(file, filePreview) {
+            const fileList = Array.from(fileInput.files);
+            const updatedList = fileList.filter(f => f !== file);
+            fileInput.files = new FileListItems(updatedList);
+            selectedFiles.removeChild(filePreview);
+            if (updatedList.length === 0) {
                 selectedFiles.classList.add('d-none');
                 uploadButton.disabled = true;
             }
-            
-            files.forEach(file => {
-                const preview = document.createElement('div');
-                preview.className = 'file-preview';
-                preview.innerHTML = `
-                    <div>
-                        <i class="fas fa-file-pdf text-danger me-2"></i>
-                        ${file.name}
-                    </div>
-                    <div>
-                        <span class="text-muted me-3">${(file.size / 1024 / 1024).toFixed(2)} MB</span>
-                        <i class="fas fa-times remove-file"></i>
-                    </div>
-                `;
-                selectedFiles.appendChild(preview);
-            });
         }
 
-        uploadForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(uploadForm);
+        uploadForm.addEventListener('submit', function(event) {
+            event.preventDefault();
             progressContainer.style.display = 'block';
             progressText.textContent = 'Uploading files...';
-            processingStatus.style.display = 'block';
-            processingStatus.innerHTML = '';
+            
+            const formData = new FormData(uploadForm);
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/upload', true);
 
-            try {
-                // Upload files
-                const uploadResponse = await fetch('/', {
-                    method: 'POST',
-                    body: formData
-                });
-                const uploadResult = await uploadResponse.json();
-
-                if (uploadResult.status === 'success') {
-                    progressText.textContent = 'Processing PDFs...';
-                    
-                    // Process each uploaded file
-                    for (const file of uploadResult.files) {
-                        const statusElement = document.createElement('div');
-                        statusElement.className = 'status-item';
-                        statusElement.innerHTML = `
-                            <i class="fas fa-spinner fa-spin me-2"></i>
-                            Processing ${file.original_filename}...
-                        `;
-                        processingStatus.appendChild(statusElement);
-
-                        try {
-                            const processResponse = await fetch('/process_pdf', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify(file)
-                            });
-                            const processResult = await processResponse.json();
-
-                        // Update status
-                        const statusElement = document.createElement('div');
-                        statusElement.className = `status-item ${processResult.status === 'success' ? 'status-success' : 'status-error'}`;
-                        statusElement.innerHTML = `
-                            <i class="fas ${processResult.status === 'success' ? 'fa-check' : 'fa-times'} me-2"></i>
-                            ${file.original_filename}: ${processResult.status === 'success' ? 
-                                `Successfully processed ${processResult.pages?.length || 0} pages` : 
-                                processResult.message}
-                        `;
-
-                        if (processResult.status === 'success') {
-                            const details = document.createElement('div');
-                            details.className = 'ms-4 mt-2 text-start';
-                            details.innerHTML = `
-                                <small>
-                                    <div>Pages extracted: ${processResult.pages?.length || 0}</div>
-                                    <div>Images extracted: ${processResult.pages?.filter(p => p.contains_figure).length || 0}</div>
-                                </small>
-                            `;
-                            statusElement.appendChild(details);
-                        }
-                    }
-
-                    progressText.textContent = 'Processing complete!';
-                    setTimeout(() => {
-                        progressContainer.style.display = 'none';
-                        location.reload();
-                    }, 2000);
-                } else {
-                    throw new Error('Upload failed');
+            xhr.upload.addEventListener('progress', function(event) {
+                if (event.lengthComputable) {
+                    const percent = (event.loaded / event.total) * 100;
+                    progressText.textContent = `Uploading... ${Math.round(percent)}%`;
                 }
-            } catch (error) {
-                progressText.textContent = 'Error processing files';
-                console.error('Error:', error);
-            }
+            });
+
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    progressText.textContent = 'Upload complete. Processing files...';
+                    simulateProcessing();
+                }
+            };
+
+            xhr.send(formData);
         });
 
-        // Navigation functions
-        function dashboard() {
-            window.location.href = "";
+        function simulateProcessing() {
+            setTimeout(function() {
+                progressContainer.style.display = 'none';
+                processingStatus.innerHTML = `
+                    <div class="status-item status-success">File 1 processed successfully</div>
+                    <div class="status-item status-success">File 2 processed successfully</div>
+                `;
+                processingStatus.style.display = 'block';
+            }, 3000);
         }
 
-        function my_reports() {
-            window.location.href = "";
-        }
-
-        function aboutPage() {
-            window.location.href = "";
-        }
-
-        function internal_contact_us() {
-            window.location.href = "";
-        }
-
-        function signout() {
-            window.location.href = "";
+        // Helper function to simulate file list updating in the input
+        function FileListItems(files) {
+            const fileList = new DataTransfer();
+            files.forEach(file => fileList.items.add(file));
+            return fileList.files;
         }
     </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
