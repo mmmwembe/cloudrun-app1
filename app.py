@@ -5,6 +5,8 @@ from werkzeug.utils import secure_filename
 from google.cloud import storage
 import json
 from dotenv import load_dotenv
+from modules.gcp_ops import save_file_to_bucket, get_public_urls2
+# save_file_to_bucket(artifact_url, session_id, file_hash_num, bucket_name, subdir="papers"
 
 load_dotenv()
 
@@ -17,7 +19,7 @@ app.config['UPLOAD_FOLDER'] = 'temp_uploads'
 # Configure constants
 BUCKET_NAME = 'papers-bucket-mmm'
 SESSION_ID = 'eb9db0ca54e94dbc82cffdab497cde13'
-SAMPLE_ID = '8c583173bc904ce596d5de69ac432acb'
+FILE_HASH_NUM = '8c583173bc904ce596d5de69ac432acb'
 ALLOWED_EXTENSIONS = {'pdf'}
 
 UPLOAD_DIR = os.path.join(os.getcwd(), 'temp_uploads')
@@ -37,7 +39,7 @@ def save_file_to_bucket(local_file_path, filename):
         bucket = client.bucket(BUCKET_NAME)
         
         # Create the full path in the bucket
-        blob_name = f"{SESSION_ID}/{SAMPLE_ID}/papers/pdf/{filename}"
+        blob_name = f"{SESSION_ID}/{FILE_HASH_NUM}/papers/pdf/{filename}"
         blob = bucket.blob(blob_name)
         
         # Upload the file
@@ -54,7 +56,7 @@ def get_uploaded_files():
         bucket = client.bucket(BUCKET_NAME)
         
         # List all blobs in the PDF directory
-        prefix = f"{SESSION_ID}/{SAMPLE_ID}/papers/pdf/"
+        prefix = f"{SESSION_ID}/{FILE_HASH_NUM}/papers/pdf/"
         blobs = bucket.list_blobs(prefix=prefix)
         
         # Get file information
@@ -127,10 +129,12 @@ def upload_file():
                 
                 try:
                     file.save(temp_path)
-                    blob_name = save_file_to_bucket(temp_path, filename)
+                    # blob_name = save_file_to_bucket(temp_path, filename)
+                    file_public_url = save_file_to_bucket(temp_path, SESSION_ID, FILE_HASH_NUM, BUCKET_NAME, subdir="papers")
+                    
                     os.remove(temp_path)
                     
-                    if blob_name:
+                    if file_public_url: #blob_name:
                         upload_count += 1
                     else:
                         error_count += 1
@@ -149,7 +153,8 @@ def upload_file():
         
         return redirect(url_for('upload_file'))
 
-    files = get_uploaded_files()
+    #files = get_uploaded_files()
+    files = get_public_urls2(BUCKET_NAME, SESSION_ID, FILE_HASH_NUM)
     return render_template('upload_images.html', files=files)
 
 if __name__ == '__main__':

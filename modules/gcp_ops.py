@@ -10,7 +10,7 @@ load_dotenv()
 # Get the Google service account JSON from environment variable
 secret_json = os.getenv('GOOGLE_SECRET_JSON')
 
-def save_file_to_bucket(artifact_url, session_id, sample_id, bucket_name, subdir="papers", subsubdirs=["pdf","word","images","csv","text"]):
+def save_file_to_bucket(artifact_url, session_id, file_hash_num, bucket_name, subdir="papers", subsubdirs=["pdf","word","images","csv","text"]):
     # Determine the subsubdir based on the file extension
     if artifact_url.endswith(".docx"):
         subsubdir = "word"
@@ -27,7 +27,7 @@ def save_file_to_bucket(artifact_url, session_id, sample_id, bucket_name, subdir
 
     if subsubdir == "word":
             # Delete the contents of the subsubdir before uploading the new file
-            blob_prefix = f"{session_id}/{sample_id}/{subdir}/{subsubdir}/"
+            blob_prefix = f"{session_id}/{file_hash_num}/{subdir}/{subsubdir}/"
             bucket = client.bucket(bucket_name)
             blobs = client.list_blobs(bucket, prefix=blob_prefix)
             for blob in blobs:
@@ -35,7 +35,7 @@ def save_file_to_bucket(artifact_url, session_id, sample_id, bucket_name, subdir
 
     try:
         # Upload the file to Google Cloud Storage
-        blob_name = f"{session_id}/{sample_id}/{subdir}/{subsubdir}/{os.path.basename(artifact_url)}"
+        blob_name = f"{session_id}/{file_hash_num}/{subdir}/{subsubdir}/{os.path.basename(artifact_url)}"
         bucket = client.bucket(bucket_name)
         blob = bucket.blob(blob_name)
         blob.upload_from_filename(artifact_url)
@@ -48,12 +48,32 @@ def save_file_to_bucket(artifact_url, session_id, sample_id, bucket_name, subdir
         return None
 
 
-def get_public_urls(bucket_name, session_id, sample_id):
+def get_public_urls(bucket_name, session_id, file_hash_num):
     
     client = storage.Client.from_service_account_info(json.loads(secret_json))
     
     bucket = client.bucket(bucket_name)
     
-    blobs = bucket.list_blobs(prefix=f"{session_id}/{sample_id}/")
+    blobs = bucket.list_blobs(prefix=f"{session_id}/{file_hash_num}/")
     
     return [f"https://storage.googleapis.com/{bucket_name}/{blob.name}" for blob in blobs]
+
+
+def get_public_urls2(bucket_name, session_id, file_hash_num):
+    client = storage.Client.from_service_account_info(json.loads(secret_json))
+    bucket = client.bucket(bucket_name)
+    
+    blobs = bucket.list_blobs(prefix=f"{session_id}/{file_hash_num}/")
+    
+    files = []
+    for blob in blobs:
+        file_info = {
+            'name': blob.name.split('/')[-1],  # File name
+            'blob_name': blob.name,  # Full blob name
+            'size': f"{blob.size / 1024 / 1024:.2f} MB",  # Size in MB
+            'updated': blob.updated.strftime('%Y-%m-%d %H:%M:%S'),  # Last updated timestamp
+            'public_url': f"https://storage.googleapis.com/{bucket_name}/{blob.name}"  # Public URL
+        }
+        files.append(file_info)
+    
+    return files
