@@ -1,3 +1,6 @@
+# Download PDF files from USGS here:
+https://pubs.usgs.gov/of/2012/1163/pages/Plates/
+
 # Deploy Flask App to Cloud Run using GitHub Repository
 
 ## Prerequisites

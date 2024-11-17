@@ -5,6 +5,7 @@ from werkzeug.utils import secure_filename
 from google.cloud import storage
 import json
 from dotenv import load_dotenv
+import pandas as pd
 # from modules.gcp_ops import save_file_to_bucket, get_public_urls2
 # save_file_to_bucket(artifact_url, session_id, file_hash_num, bucket_name, subdir="papers"
 
@@ -18,9 +19,82 @@ app.config['UPLOAD_FOLDER'] = 'temp_uploads'
 
 # Configure constants
 BUCKET_NAME = 'papers-bucket-mmm'
+# Configure bucket names
+BUCKET_ORIGINAL_PAPERS = 'papers-parent-bucket-mmm'
+BUCKET_SPLIT_PAGES = 'papers-split-pages-bucket-mmm'
+BUCKET_EXTRACTED_IMAGES = 'papers-extracted-images-bucket-mmm'
+BUCKET_PAPER_TRACKER_CSV = 'papers-extracted-pages-csv-bucket-mmm'
 SESSION_ID = 'eb9db0ca54e94dbc82cffdab497cde13'
 FILE_HASH_NUM = '8c583173bc904ce596d5de69ac432acb'
 ALLOWED_EXTENSIONS = {'pdf'}
+
+# Initialize global parent files DataFrame
+PARENT_FILES_PD = pd.DataFrame(columns=[
+    'gcp_public_url',
+    'hash',
+    'original_filename',
+    'citation_name',
+    'citation_authors',
+    'citation_year',
+    'citation_organization',
+    'citation_doi',
+    'citation_url',
+    'upload_timestamp'
+])
+
+def get_default_citation():
+    return {
+        'name': "Stuart R. Stidolph Diatom Atlas",
+        'full_citation': "Stidolph, S.R., Sterrenburg, F.A.S., Smith, K.E.L., Kraberg, A., 2012, Stuart R. Stidolph Diatom Atlas: U.S. Geological Survey Open-File Report 2012-1163, 199 p., available at http://pubs.usgs.gov/of/2012/1163/.",
+        'authors': ["S.R. Stidolph", "F.A.S. Sterrenburg", "K.E.L. Smith", "A. Kraberg"],
+        'year': "2012",
+        'organization': "U.S. Geological Survey",
+        'doi': "",
+        'url': "http://pubs.usgs.gov/of/2012/1163/"
+}
+
+
+def update_parent_files_tracking(public_url):
+    """
+    Update the PARENT_FILES_PD DataFrame with file information and citation details.
+    Extracts filename from the public_url.
+    
+    Args:
+        public_url (str): The public URL from GCP storage
+    """
+    global PARENT_FILES_PD
+    
+    # Extract filename from the public_url
+    filename = public_url.split('/')[-1]  # Gets the last part of the URL path (the filename)
+    
+    # Get default citation info
+    citation = get_default_citation()
+    
+    # Create new row data
+    new_row = {
+        'gcp_public_url': public_url,
+        'hash': FILE_HASH_NUM,
+        'original_filename': filename,  # Using filename extracted from URL
+        'citation_name': citation['name'],
+        'citation_authors': ', '.join(citation['authors']),
+        'citation_year': citation['year'],
+        'citation_organization': citation['organization'],
+        'citation_doi': citation['doi'],
+        'citation_url': citation['url'],
+        'upload_timestamp': pd.Timestamp.now()
+    }
+    
+    # Add new row to DataFrame
+    PARENT_FILES_PD = pd.concat([PARENT_FILES_PD, pd.DataFrame([new_row])], ignore_index=True)
+    
+    try:
+        # Save updated DataFrame to GCS
+        # save_tracking_to_gcs()
+        pass
+    except Exception as e:
+        print(f"Error saving tracking data to GCS: {e}")
+
+
 
 UPLOAD_DIR = os.path.join(os.getcwd(), 'temp_uploads')
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -45,7 +119,9 @@ def save_file_to_bucket(local_file_path, filename):
         # Upload the file
         blob.upload_from_filename(local_file_path)
         
-        return blob_name
+        public_url = f"https://storage.googleapis.com/{BUCKET_NAME}/{blob_name}"
+        
+        return blob_name, public_url
     except Exception as e:
         print(f"Error uploading file: {e}")
         return None
@@ -130,8 +206,11 @@ def upload_file():
                 
                 try:
                     file.save(temp_path)
-                    blob_name = save_file_to_bucket(temp_path, filename)
+                    blob_name, public_url = save_file_to_bucket(temp_path, filename)
                     #file_public_url = save_file_to_bucket(temp_path, SESSION_ID, FILE_HASH_NUM, BUCKET_NAME, subdir="papers")
+                    
+                    # Update PARENT_FILES_PD
+                    update_parent_files_tracking(public_url)
                     
                     os.remove(temp_path)
                     
