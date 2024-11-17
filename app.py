@@ -40,10 +40,11 @@ def generate_hash(filename):
 def get_default_citation():
     return {
         'name': "Stuart R. Stidolph Diatom Atlas",
+        'full_citation': "Stidolph, S.R., Sterrenburg, F.A.S., Smith, K.E.L., Kraberg, A., 2012, Stuart R. Stidolph Diatom Atlas: U.S. Geological Survey Open-File Report 2012-1163, 199 p., available at http://pubs.usgs.gov/of/2012/1163/.",
         'authors': ["S.R. Stidolph", "F.A.S. Sterrenburg", "K.E.L. Smith", "A. Kraberg"],
         'year': "2012",
         'organization': "U.S. Geological Survey",
-        'doi': "2012-1163",
+        'doi': "",
         'url': "http://pubs.usgs.gov/of/2012/1163/"
     }
 

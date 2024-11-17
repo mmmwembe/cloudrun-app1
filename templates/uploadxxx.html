@@ -92,7 +92,7 @@
             transition: 0.3s;
         }
         
-        /* Drag and drop styles with original theme colors */
+        /* Drag and drop styles */
         .drag-drop-zone {
             border: 2px dashed #2c3e50;
             border-radius: 10px;
@@ -128,31 +128,61 @@
         .remove-file {
             color: #e74c3c;
             cursor: pointer;
-            transition: color 0.3s ease;
         }
         .remove-file:hover {
             color: #c0392b;
         }
         
-        /* Spinner CSS */
-        .spinner {
+        /* Progress Spinners */
+        .progress-container {
             display: none;
-            border: 16px solid #f3f3f3;
-            border-top: 16px solid green;
-            border-radius: 50%;
-            width: 120px;
-            height: 120px;
-            animation: spin 2s linear infinite;
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             z-index: 1000;
+            text-align: center;
+        }
+        .spinner {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #28a745;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        .progress-text {
+            color: #28a745;
+            font-weight: bold;
+            margin-top: 10px;
         }
         
         @keyframes spin {
-            0% { transform: translate(-50%, -50%) rotate(0deg); }
-            100% { transform: translate(-50%, -50%) rotate(360deg); }
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Processing Status */
+        .processing-status {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            background-color: rgba(255, 255, 255, 0.9);
+        }
+        .status-item {
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 5px;
+        }
+        .status-success {
+            background-color: rgba(40, 167, 69, 0.1);
+            color: #28a745;
+        }
+        .status-error {
+            background-color: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
         }
     </style>
 </head>
@@ -160,22 +190,23 @@
     <div class="sidebar">
         <img src="/static/diatomhub-images/logo/diatom_hub_5e.svg" alt="DiatomHub Logo" class="sidebar-logo">
         <ul class="sidebar-nav">
-            <!-- <li><a href="#" onclick="dashboard()">Dashboard</a></li>
+            <li><a href="#" onclick="dashboard()">Dashboard</a></li>
             <li><a href="#" onclick="my_reports()">Samples & Reports</a></li>
             <li><a href="#" onclick="aboutPage()">About</a></li>
             <li><a href="#" onclick="internal_contact_us()">Questions & Feedback</a></li>
-            <li><a href="#" onclick="signout()">Sign Out</a></li> -->
+            <li><a href="#" onclick="signout()">Sign Out</a></li>
         </ul>
     </div>
 
-    <div class="container mt-5 text-center" style="width: 30%;">
-        <h1 class="mb-4">Upload Papers</h1>
-        
-        <div class="row mb-4">
-            <div class="col">
-                <h5>Sample Description</h5>
+    <div class="content">
+        <div class="container mt-5 text-center" style="max-width: 600px; margin: 0 auto;">
+            <h1 class="mb-4">Upload Papers</h1>
+            
+            <div class="row mb-4">
+                <div class="col">
+                    <h5>Sample Description</h5>
+                </div>
             </div>
-        </div>
 
         {% with messages = get_flashed_messages() %}
             {% if messages %}
@@ -193,45 +224,20 @@
                 <p class="mb-0">Drag and drop PDF files here or click to select</p>
                 <input type="file" class="d-none" id="fileInput" name="files[]" multiple accept=".pdf">
             </div>
-            <div class="selected-files d-none" id="selectedFiles">
-                <!-- Selected files will be listed here -->
-            </div>
+            <div class="selected-files d-none" id="selectedFiles"></div>
             <button type="submit" class="btn btn-primary" id="uploadButton" disabled>
                 Upload Files
             </button>
         </form>
-    </div>
 
-    <div class="container mt-5">
-        {% if files %}
-        <h2>Uploaded Files ({{ files|length }})</h2>
-        <div class="row">
-            {% for file in files %}
-            <div class="col-md-4 mb-3">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fas fa-file-pdf text-danger me-2"></i>
-                            {{ file.name }}
-                        </h5>
-                        <p class="card-text">
-                            Size: {{ file.size }}<br>
-                            Updated: {{ file.updated }}
-                        </p>
-                        <a href="{{ url_for('preview_pdf', blob_name=file.blob_name) }}" 
-                           class="btn btn-primary"
-                           target="_blank">
-                            <i class="fas fa-eye"></i> View PDF
-                        </a>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
+        <div class="processing-status" id="processingStatus"></div>
         </div>
-        {% endif %}
     </div>
 
-    <div id="spinner" class="spinner"></div>
+    <div class="progress-container" id="progressContainer">
+        <div class="spinner"></div>
+        <div class="progress-text" id="progressText">Processing files...</div>
+    </div>
 
     <script>
         const dropZone = document.getElementById('dropZone');
@@ -239,114 +245,113 @@
         const selectedFiles = document.getElementById('selectedFiles');
         const uploadButton = document.getElementById('uploadButton');
         const uploadForm = document.getElementById('uploadForm');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressText = document.getElementById('progressText');
+        const processingStatus = document.getElementById('processingStatus');
         
-        // Prevent default drag behaviors
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, preventDefaults, false);
-            document.body.addEventListener(eventName, preventDefaults, false);
-        });
-
-        // Highlight drop zone when dragging over it
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropZone.addEventListener(eventName, highlight, false);
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, unhighlight, false);
-        });
-
-        // Handle dropped files
-        dropZone.addEventListener('drop', handleDrop, false);
-        
-        // Handle clicked files
         dropZone.addEventListener('click', () => fileInput.click());
+        
         fileInput.addEventListener('change', handleFiles);
+        dropZone.addEventListener('dragover', handleDragOver);
+        dropZone.addEventListener('dragleave', handleDragLeave);
+        dropZone.addEventListener('drop', handleDrop);
 
-        function preventDefaults (e) {
-            e.preventDefault();
-            e.stopPropagation();
+        function handleFiles(event) {
+            const files = event.target.files;
+            processFiles(files);
         }
 
-        function highlight(e) {
+        function handleDragOver(event) {
+            event.preventDefault();
             dropZone.classList.add('dragover');
         }
 
-        function unhighlight(e) {
+        function handleDragLeave() {
             dropZone.classList.remove('dragover');
         }
 
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-            handleFiles({ target: { files: files } });
+        function handleDrop(event) {
+            event.preventDefault();
+            dropZone.classList.remove('dragover');
+            const files = event.dataTransfer.files;
+            processFiles(files);
         }
 
-        function handleFiles(e) {
-            const files = [...e.target.files];
-            fileInput.files = e.target.files;
-            
-            // Clear previous previews
-            selectedFiles.innerHTML = '';
-            
-            // Show selected files div if there are files
-            if (files.length > 0) {
-                selectedFiles.classList.remove('d-none');
-                uploadButton.disabled = false;
-            } else {
+        function processFiles(files) {
+            selectedFiles.innerHTML = ''; 
+            const fileList = Array.from(files);
+            fileList.forEach(file => {
+                const filePreview = document.createElement('div');
+                filePreview.classList.add('file-preview');
+                filePreview.innerHTML = `
+                    <span>${file.name}</span>
+                    <i class="remove-file fas fa-trash-alt"></i>
+                `;
+                selectedFiles.appendChild(filePreview);
+                const removeFileIcon = filePreview.querySelector('.remove-file');
+                removeFileIcon.addEventListener('click', () => removeFile(file, filePreview));
+            });
+
+            selectedFiles.classList.remove('d-none');
+            uploadButton.disabled = false;
+        }
+
+        function removeFile(file, filePreview) {
+            const fileList = Array.from(fileInput.files);
+            const updatedList = fileList.filter(f => f !== file);
+            fileInput.files = new FileListItems(updatedList);
+            selectedFiles.removeChild(filePreview);
+            if (updatedList.length === 0) {
                 selectedFiles.classList.add('d-none');
                 uploadButton.disabled = true;
             }
+        }
+
+        uploadForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            progressContainer.style.display = 'block';
+            progressText.textContent = 'Uploading files...';
             
-            // Add file previews
-            files.forEach(file => {
-                const preview = document.createElement('div');
-                preview.className = 'file-preview';
-                preview.innerHTML = `
-                    <div>
-                        <i class="fas fa-file-pdf text-danger me-2"></i>
-                        ${file.name}
-                    </div>
-                    <div>
-                        <span class="text-muted me-3">${(file.size / 1024 / 1024).toFixed(2)} MB</span>
-                        <i class="fas fa-times remove-file"></i>
-                    </div>
-                `;
-                selectedFiles.appendChild(preview);
+            const formData = new FormData(uploadForm);
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/upload', true);
+
+            xhr.upload.addEventListener('progress', function(event) {
+                if (event.lengthComputable) {
+                    const percent = (event.loaded / event.total) * 100;
+                    progressText.textContent = `Uploading... ${Math.round(percent)}%`;
+                }
             });
-        }
 
-        // Show spinner during form submission
-        uploadForm.addEventListener('submit', function() {
-            document.getElementById('spinner').style.display = 'block';
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    progressText.textContent = 'Upload complete. Processing files...';
+                    simulateProcessing();
+                }
+            };
+
+            xhr.send(formData);
         });
 
-        // Hide spinner when page loads
-        window.addEventListener('load', function() {
-            document.getElementById('spinner').style.display = 'none';
-        });
-
-        // Navigation functions
-        function dashboard() {
-            window.location.href = "";
+        function simulateProcessing() {
+            setTimeout(function() {
+                progressContainer.style.display = 'none';
+                processingStatus.innerHTML = `
+                    <div class="status-item status-success">File 1 processed successfully</div>
+                    <div class="status-item status-success">File 2 processed successfully</div>
+                `;
+                processingStatus.style.display = 'block';
+            }, 3000);
         }
 
-        function my_reports() {
-            window.location.href = "";
-        }
-
-        function aboutPage() {
-            window.location.href = "";
-        }
-
-        function internal_contact_us() {
-            window.location.href = "";
-        }
-
-        function signout() {
-            window.location.href = "";
+        // Helper function to simulate file list updating in the input
+        function FileListItems(files) {
+            const fileList = new DataTransfer();
+            files.forEach(file => fileList.items.add(file));
+            return fileList.files;
         }
     </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
-
-
