@@ -66,7 +66,8 @@ def get_uploaded_files():
                 'name': blob.name.split('/')[-1],
                 'blob_name': blob.name,
                 'size': f"{blob.size / 1024 / 1024:.2f} MB",
-                'updated': blob.updated.strftime('%Y-%m-%d %H:%M:%S')
+                'updated': blob.updated.strftime('%Y-%m-%d %H:%M:%S'),
+                'public_url': f"https://storage.googleapis.com/{BUCKET_NAME}/{FILE_HASH_NUM}/{blob.name}" 
             }
             files.append(file_info)
         
