@@ -27,6 +27,48 @@ ALLOWED_EXTENSIONS = {'pdf'}
 UPLOAD_DIR = os.path.join(os.getcwd(), 'temp_uploads')
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
+# Initialize global parent files DataFrame
+parent_files_df = pd.DataFrame(columns=[
+    'file_path_public_url',
+    'hash',
+    'original_filename',
+    'citation_name',
+    'citation_authors',
+    'citation_year',
+    'citation_organization',
+    'citation_doi',
+    'citation_url',
+    'upload_timestamp'
+])
+
+def update_parent_files_df(file_info):
+    """Update the global parent files DataFrame with new file information."""
+    global parent_files_df
+    
+    # Create new parent file entry
+    parent_file_data = {
+        'file_path_public_url': file_info['file_path_public_url'],
+        'hash': file_info['hash'],
+        'original_filename': file_info['original_filename'],
+        'citation_name': file_info['full_citation']['name'],
+        'citation_authors': ', '.join(file_info['full_citation']['authors']),
+        'citation_year': file_info['full_citation']['year'],
+        'citation_organization': file_info['full_citation']['organization'],
+        'citation_doi': file_info['full_citation']['doi'],
+        'citation_url': file_info['full_citation']['url'],
+        'upload_timestamp': pd.Timestamp.now().isoformat()
+    }
+    
+    # Check if file with same hash already exists
+    if file_info['hash'] not in parent_files_df['hash'].values:
+        # Add new row to DataFrame
+        parent_files_df = pd.concat([
+            parent_files_df, 
+            pd.DataFrame([parent_file_data])
+        ], ignore_index=True)
+    
+    return True
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -226,6 +268,8 @@ def upload_file():
                     upload_result = upload_file_to_bucket(temp_path, filename, BUCKET_ORIGINAL_PAPERS)
                     
                     if upload_result:
+                        # Update parent files DataFrame
+                        update_parent_files_df(upload_result)
                         uploaded_files.append(upload_result)
                     
                     os.remove(temp_path)
@@ -234,9 +278,19 @@ def upload_file():
                     if os.path.exists(temp_path):
                         os.remove(temp_path)
         
-        return jsonify({'status': 'success', 'files': uploaded_files})
+        # Convert DataFrame to dict for JSON serialization
+        parent_files_list = parent_files_df.to_dict('records')
+        return jsonify({
+            'status': 'success', 
+            'files': uploaded_files,
+            'parent_files': parent_files_list
+        })
 
-    return render_template('upload_images.html')
+    # For GET requests, return the template with current parent files
+    parent_files_list = parent_files_df.to_dict('records')
+    
+    return render_template('upload_images.html', parent_files=parent_files_list)
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.getenv('PORT', 8080)))
