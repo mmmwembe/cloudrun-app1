@@ -203,6 +203,7 @@
 
         {% if files %}
         <form id="processFilesForm" class="mt-4">
+            <input type="hidden" id="num_of_files" value="{{ files|length }}">
             <button type="button" onclick="processPDFs()" style="font-size: 2rem; padding: 1.5rem 3rem; border-radius: 0.75rem;" class="btn btn-danger">Process Files</button>
         </form>
         {% endif %}
@@ -356,8 +357,9 @@
         }
 
         function processPDFs() {
-            window.location.href = "";
-            alert('Process PDFs is Ready to be called!!!!!')
+            // const numFiles = document.getElementById('num_of_files').value;
+            window.location.href = "{{ url_for('go_to_processfile') }}";
+            // alert('Process PDFs is Ready to be called!!!!!')
         }
 
 

@@ -1,6 +1,6 @@
 # app.py
 import os
-from flask import Flask, render_template, request, flash, redirect, url_for, Response
+from flask import Flask, render_template, request, flash, redirect, url_for, Response, jsonify
 from werkzeug.utils import secure_filename
 from google.cloud import storage
 import json
@@ -236,6 +236,29 @@ def upload_file():
     files = get_uploaded_files()
     #files = get_public_urls2(BUCKET_NAME, SESSION_ID, FILE_HASH_NUM)
     return render_template('upload_images.html', files=files)
+
+@app.route('/goto_processfile/')
+def go_to_processfile():
+    
+    num_rows = len(PARENT_FILES_PD)
+    
+    return render_template('process_file.html', number_of_files=num_rows)
+
+@app.route('/process_files/', methods=['POST'])
+def process_files():
+    current_index = int(request.json.get('index', 0))
+    
+    if current_index >= len(PARENT_FILES_PD):
+        return jsonify({'done': True})
+        
+    current_file = PARENT_FILES_PD.iloc[current_index]
+    return jsonify({
+        'done': False,
+        'gcp_public_url': current_file['gcp_public_url'],
+        'current_index': current_index,
+        'total_files': len(PARENT_FILES_PD)
+    })
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.getenv('PORT', 8080)))
