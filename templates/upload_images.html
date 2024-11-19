@@ -243,6 +243,15 @@
 
     <div id="spinner" class="spinner"></div>
 
+    <form id="claudeModel" class="mt-4">
+        <button type="button" onclick="callClaudeAI()" style="font-size: 2rem; padding: 1.5rem 3rem; border-radius: 0.75rem;" class="btn btn-danger">Extract Data with Claude</button>
+    </form>
+    
+    <div id="completionResult" style="margin-top: 20px;">
+        <!-- This is where the completion will be displayed -->
+    </div>
+
+
     <script>
         const dropZone = document.getElementById('dropZone');
         const fileInput = document.getElementById('fileInput');
@@ -361,6 +370,29 @@
             window.location.href = "{{ url_for('go_to_processfile') }}";
             // alert('Process PDFs is Ready to be called!!!!!')
         }
+
+
+
+
+        function callClaudeAI() {
+        // Prepare the request data
+        var formData = new FormData();
+
+        // Send the POST request to '/claudeai/'
+        fetch('/claudeai/', {
+            method: 'POST',
+            body: formData,
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Display the completion result in the HTML
+            document.getElementById('completionResult').innerText = data.claude_completion;
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert("An error occurred while fetching the completion.");
+        });
+    }
 
 
     </script>

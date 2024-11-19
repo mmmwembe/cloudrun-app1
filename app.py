@@ -6,6 +6,8 @@ from google.cloud import storage
 import json
 from dotenv import load_dotenv
 import pandas as pd
+from modules.process_pdfs import process_pdf
+from modules.claude import create_claude_prompt, encode_pdf_to_base64, create_messages, get_completion
 # from modules.gcp_ops import save_file_to_bucket, get_public_urls2
 # save_file_to_bucket(artifact_url, session_id, file_hash_num, bucket_name, subdir="papers"
 
@@ -28,6 +30,17 @@ SESSION_ID = 'eb9db0ca54e94dbc82cffdab497cde13'
 FILE_HASH_NUM = '8c583173bc904ce596d5de69ac432acb'
 ALLOWED_EXTENSIONS = {'pdf'}
 
+test_pdf_path = os.path.join("static", "test-pdf", "3_Azores.pdf")
+
+
+# Initialize temp directories
+TEMP_EXTRACTED_PDFS_DIR = os.path.join(app.static_folder, 'tmp_extracted_pdfs')
+os.makedirs(TEMP_EXTRACTED_PDFS_DIR, exist_ok=True)
+
+TEMP_EXTRACTED_IMAGES_DIR = os.path.join(app.static_folder, 'tmp_extracted_images')
+os.makedirs(TEMP_EXTRACTED_IMAGES_DIR, exist_ok=True)
+
+
 # Initialize global parent files DataFrame
 PARENT_FILES_PD = pd.DataFrame(columns=[
     'gcp_public_url',
@@ -41,6 +54,30 @@ PARENT_FILES_PD = pd.DataFrame(columns=[
     'citation_url',
     'upload_timestamp'
 ])
+
+global CHILD_FILES_PD
+CHILD_FILES_PD = pd.DataFrame(columns = [
+    # Child-specific fields
+    'child_pdf_file_url',
+    'has_images',
+    'num_of_images',
+    'page_number',
+    'image_urls_array',
+    
+    # Parent fields from PARENT_FILES_PD
+    'gcp_public_url',
+    'hash',
+    'original_filename',
+    'citation_name',
+    'citation_authors',
+    'citation_year',
+    'citation_organization',
+    'citation_doi',
+    'citation_url',
+    'upload_timestamp'
+])
+
+
 
 def get_default_citation():
     return {
@@ -81,7 +118,8 @@ def update_parent_files_tracking(public_url):
         'citation_organization': citation['organization'],
         'citation_doi': citation['doi'],
         'citation_url': citation['url'],
-        'upload_timestamp': pd.Timestamp.now()
+        'upload_timestamp': pd.Timestamp.now(),
+        'processed': False
     }
     
     # Add new row to DataFrame
@@ -258,6 +296,21 @@ def process_files():
         'current_index': current_index,
         'total_files': len(PARENT_FILES_PD)
     })
+
+
+@app.route('/claudeai/', methods=['POST'])
+def extract_data_with_claude():
+    
+    base64_string = encode_pdf_to_base64(test_pdf_path)
+    
+    claude_llm_prompt = create_claude_prompt()
+    
+    claude_msg = create_messages(base64_string, claude_llm_prompt)
+    
+    claude_completion = get_completion(claude_msg)
+    
+    return jsonify({'claude_completion': claude_completion})
+
 
 
 if __name__ == '__main__':

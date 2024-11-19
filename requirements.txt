@@ -5,3 +5,5 @@ pandas
 google-cloud-storage
 pymupdf
 Werkzeug>=2.2.2
+Pillow
+anthropic
