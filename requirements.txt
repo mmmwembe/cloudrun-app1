@@ -7,3 +7,5 @@ pymupdf
 Werkzeug>=2.2.2
 Pillow
 anthropic
+PyPDF2
+Groq

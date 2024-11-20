@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 import pandas as pd
 from modules.process_pdfs import process_pdf
 from modules.claude_ai import create_claude_prompt, encode_pdf_to_base64, create_messages, get_completion
+from modules.groq_llama import get_llama_paper_info
 # from modules.gcp_ops import save_file_to_bucket, get_public_urls2
 # save_file_to_bucket(artifact_url, session_id, file_hash_num, bucket_name, subdir="papers"
 
@@ -298,19 +299,43 @@ def process_files():
     })
 
 
+# @app.route('/claudeai/', methods=['POST'])
+# def extract_data_with_claude():
+    
+#     base64_string = encode_pdf_to_base64(test_pdf_path)
+    
+#     claude_llm_prompt = create_claude_prompt()
+    
+#     claude_msg = create_messages(base64_string, claude_llm_prompt)
+    
+#     claude_completion = get_completion(claude_msg)
+    
+#     return jsonify({'claude_completion': claude_completion})
 @app.route('/claudeai/', methods=['POST'])
 def extract_data_with_claude():
-    
-    base64_string = encode_pdf_to_base64(test_pdf_path)
-    
-    claude_llm_prompt = create_claude_prompt()
-    
-    claude_msg = create_messages(base64_string, claude_llm_prompt)
-    
-    claude_completion = get_completion(claude_msg)
-    
-    return jsonify({'claude_completion': claude_completion})
+    try:
+        # Example: Encoding PDF to base64
+        # base64_string = encode_pdf_to_base64(test_pdf_path)
+        
+        # # Create the Claude prompt
+        # claude_llm_prompt = create_claude_prompt()
+        
+        # # Create the message for Claude
+        # claude_msg = create_messages(base64_string, claude_llm_prompt)
+        
+        # # Get the completion from Claude
+        # claude_completion = get_completion(claude_msg)
+        
+        
+        claude_completion = get_llama_paper_info(test_pdf_path)
+        
+        # Return the Claude completion response
+        return jsonify({'claude_completion': claude_completion})
 
+    except Exception as e:
+        # Log the error and return a response
+        print(f"Error occurred while extracting data with Claude: {e}")
+        return jsonify({'error': 'An error occurred while fetching the completion.'}), 500
 
 
 if __name__ == '__main__':
