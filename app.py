@@ -324,7 +324,7 @@ def extract_data_with_claude():
         # claude_msg = create_messages(base64_string, claude_llm_prompt)
         
         # # Get the completion from Claude
-        # claude_completion = get_completion(claude_msg)
+        # claude_completion = get_completion(claude_msg)  
         
         
         claude_completion = get_llama_paper_info(test_pdf_path)
