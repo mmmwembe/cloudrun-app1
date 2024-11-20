@@ -7,7 +7,7 @@ import json
 from dotenv import load_dotenv
 import pandas as pd
 from modules.process_pdfs import process_pdf
-from modules.claude import create_claude_prompt, encode_pdf_to_base64, create_messages, get_completion
+from modules.claude_ai import create_claude_prompt, encode_pdf_to_base64, create_messages, get_completion
 # from modules.gcp_ops import save_file_to_bucket, get_public_urls2
 # save_file_to_bucket(artifact_url, session_id, file_hash_num, bucket_name, subdir="papers"
 
