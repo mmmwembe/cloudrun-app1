@@ -243,7 +243,7 @@
 
     <div id="spinner" class="spinner"></div>
 
-    <form id="claudeModel" class="mt-4">
+    <form id="claudeModel" class="mt-4 d-flex justify-content-center">
         <button type="button" onclick="callClaudeAI()" style="font-size: 2rem; padding: 1.5rem 3rem; border-radius: 0.75rem;" class="btn btn-danger">Extract Data with Claude</button>
     </form>
     
@@ -375,24 +375,34 @@
 
 
         function callClaudeAI() {
-        // Prepare the request data
-        var formData = new FormData();
+            // Show the spinner when the function is called
+            document.getElementById('spinner').style.display = 'block';
 
-        // Send the POST request to '/claudeai/'
-        fetch('/claudeai/', {
-            method: 'POST',
-            body: formData,
-        })
-        .then(response => response.json())
-        .then(data => {
-            // Display the completion result in the HTML
-            document.getElementById('completionResult').innerText = data.claude_completion;
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert("An error occurred while fetching the completion.");
-        });
-    }
+            // Prepare the request data
+            var formData = new FormData();
+
+            // Send the POST request to '/claudeai/'
+            fetch('/claudeai/', {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Display the completion result in the HTML
+                document.getElementById('completionResult').innerText = data.claude_completion;
+                
+                // Hide the spinner after the response is received
+                document.getElementById('spinner').style.display = 'none';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("An error occurred while fetching the completion.");
+                
+                // Hide the spinner in case of an error
+                document.getElementById('spinner').style.display = 'none';
+            });
+        }
+
 
 
     </script>
