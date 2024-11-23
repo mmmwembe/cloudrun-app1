@@ -32,6 +32,8 @@ FILE_HASH_NUM = '8c583173bc904ce596d5de69ac432acb'
 ALLOWED_EXTENSIONS = {'pdf'}
 
 test_pdf_path = os.path.join("static", "test-pdf", "3_Azores.pdf")
+workflow_image_path = os.path.join("static", "pdf-work-flow", "mermaid-diagram-worfklow.svg")
+
 
 
 # Initialize temp directories
