@@ -12,7 +12,10 @@ from modules.groq_llama import get_llama_paper_info
 from modules.gcp_ops import save_file_to_bucket, save_tracker_csv, initialize_tracker_df_from_gcp
 # save_file_to_bucket(artifact_url, session_id, file_hash_num, bucket_name, subdir="papers"
 from datetime import datetime
-from modules.llm_ops import GROQ_API_KEY, llm, read_pdf_from_url, llm_parsed_output_from_text, create_messages, llm_with_JSON_output
+from modules.llm_ops import llm_parsed_output_from_text, create_messages, llm_with_JSON_output
+import requests
+from langchain_community.document_loaders import PyPDFLoader
+import tempfile
 
 load_dotenv()
 
@@ -47,6 +50,36 @@ os.makedirs(TEMP_EXTRACTED_PDFS_DIR, exist_ok=True)
 
 TEMP_EXTRACTED_IMAGES_DIR = os.path.join(app.static_folder, 'tmp_extracted_images')
 os.makedirs(TEMP_EXTRACTED_IMAGES_DIR, exist_ok=True)
+
+
+def read_pdf_from_url(pdf_url):
+    try:
+        # Convert Google Cloud Storage URL to direct download URL
+        pdf_url = pdf_url.replace("storage.cloud.google.com", "storage.googleapis.com")
+
+        # Download the PDF
+        response = requests.get(pdf_url)
+        response.raise_for_status()  # Raise an exception for bad status codes
+
+        # Create a temporary file to store the PDF
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
+            temp_file.write(response.content)
+            temp_path = temp_file.name
+
+        # Use PyPDFLoader to load the PDF
+        loader = PyPDFLoader(temp_path)
+
+        # Load and split the document into pages
+        pages = loader.load_and_split()
+
+        # Extract text from all pages
+        text_content = "\n\n".join([page.page_content for page in pages])
+
+        return text_content
+
+    except Exception as e:
+        print(f"Error reading PDF: {e}")
+        return None
 
 
 # Initialize global parent files DataFrame
