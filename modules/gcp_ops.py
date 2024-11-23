@@ -90,10 +90,11 @@ def save_tracker_csv(df, session_id, bucket_name):
         if os.path.exists(temp_csv_path):
             os.remove(temp_csv_path)
         return None
-    
+
 def initialize_tracker_df_from_gcp(session_id, bucket_name):
     """
     Initialize a pandas DataFrame from a CSV file stored in GCS using session_id.
+    Reads directly from GCS URL.
     
     Args:
         session_id (str): The session ID used as the CSV filename
@@ -103,28 +104,11 @@ def initialize_tracker_df_from_gcp(session_id, bucket_name):
         pandas.DataFrame: The initialized DataFrame, or an empty DataFrame with default columns if file not found
     """
     try:
-        # Initialize GCS client
-        client = storage.Client.from_service_account_info(json.loads(secret_json))
-        bucket = client.bucket(bucket_name)
+        # Construct the GCS URL
+        gcs_url = f"https://storage.googleapis.com/{bucket_name}/{session_id}/papers/csv/{session_id}.csv"
         
-        # Construct blob path (matching the structure from save_file_to_bucket)
-        blob_name = f"{session_id}/papers/csv/{session_id}.csv"
-        blob = bucket.blob(blob_name)
-        
-        # Create a temporary file to store the downloaded CSV
-        temp_csv_path = os.path.join('static', 'tmp', f'temp_{session_id}.csv')
-        os.makedirs(os.path.dirname(temp_csv_path), exist_ok=True)
-        
-        # Download the blob to a temporary file
-        blob.download_to_filename(temp_csv_path)
-        
-        # Read the CSV into a DataFrame
-        df = pd.read_csv(temp_csv_path)
-        
-        # Clean up temporary file
-        if os.path.exists(temp_csv_path):
-            os.remove(temp_csv_path)
-            
+        # Read directly from URL
+        df = pd.read_csv(gcs_url)
         return df
         
     except Exception as e:
@@ -142,10 +126,62 @@ def initialize_tracker_df_from_gcp(session_id, bucket_name):
             'citation_url',
             'upload_timestamp'
         ])
-    finally:
-        # Ensure cleanup of temporary file
-        if 'temp_csv_path' in locals() and os.path.exists(temp_csv_path):
-            os.remove(temp_csv_path)    
+ 
+# def initialize_tracker_df_from_gcp(session_id, bucket_name):
+#     """
+#     Initialize a pandas DataFrame from a CSV file stored in GCS using session_id.
+    
+#     Args:
+#         session_id (str): The session ID used as the CSV filename
+#         bucket_name (str): The GCS bucket name where the CSV is stored
+    
+#     Returns:
+#         pandas.DataFrame: The initialized DataFrame, or an empty DataFrame with default columns if file not found
+#     """
+#     try:
+#         # Initialize GCS client
+#         client = storage.Client.from_service_account_info(json.loads(secret_json))
+#         bucket = client.bucket(bucket_name)
+        
+#         # Construct blob path (matching the structure from save_file_to_bucket)
+#         blob_name = f"{session_id}/papers/csv/{session_id}.csv"
+#         blob = bucket.blob(blob_name)
+        
+#         # Create a temporary file to store the downloaded CSV
+#         temp_csv_path = os.path.join('static', 'tmp', f'temp_{session_id}.csv')
+#         os.makedirs(os.path.dirname(temp_csv_path), exist_ok=True)
+        
+#         # Download the blob to a temporary file
+#         blob.download_to_filename(temp_csv_path)
+        
+#         # Read the CSV into a DataFrame
+#         df = pd.read_csv(temp_csv_path)
+        
+#         # Clean up temporary file
+#         if os.path.exists(temp_csv_path):
+#             os.remove(temp_csv_path)
+            
+#         return df
+        
+#     except Exception as e:
+#         print(f"Error initializing DataFrame from GCS: {str(e)}")
+#         # If file doesn't exist or other error, return empty DataFrame with default columns
+#         return pd.DataFrame(columns=[
+#             'gcp_public_url',
+#             'hash',
+#             'original_filename',
+#             'citation_name',
+#             'citation_authors',
+#             'citation_year',
+#             'citation_organization',
+#             'citation_doi',
+#             'citation_url',
+#             'upload_timestamp'
+#         ])
+#     finally:
+#         # Ensure cleanup of temporary file
+#         if 'temp_csv_path' in locals() and os.path.exists(temp_csv_path):
+#             os.remove(temp_csv_path)    
             
             
 # def save_file_to_bucket(artifact_url, session_id, file_hash_num, bucket_name, subdir="papers", subsubdirs=["pdf","word","images","csv","text"]):
