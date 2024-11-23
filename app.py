@@ -11,6 +11,8 @@ from modules.claude_ai import create_claude_prompt, encode_pdf_to_base64, create
 from modules.groq_llama import get_llama_paper_info
 # from modules.gcp_ops import save_file_to_bucket, get_public_urls2
 # save_file_to_bucket(artifact_url, session_id, file_hash_num, bucket_name, subdir="papers"
+from datetime import datetime
+
 
 load_dotenv()
 
@@ -29,12 +31,15 @@ BUCKET_EXTRACTED_IMAGES = 'papers-extracted-images-bucket-mmm'
 BUCKET_PAPER_TRACKER_CSV = 'papers-extracted-pages-csv-bucket-mmm'
 SESSION_ID = 'eb9db0ca54e94dbc82cffdab497cde13'
 FILE_HASH_NUM = '8c583173bc904ce596d5de69ac432acb'
+PAPERS_BUCKET ='papers-diatoms'
+
 ALLOWED_EXTENSIONS = {'pdf'}
 
 test_pdf_path = os.path.join("static", "test-pdf", "3_Azores.pdf")
 workflow_image_path = os.path.join("static", "pdf-work-flow", "mermaid-diagram-worfklow.svg")
 
-
+formatted_date = datetime.now().strftime("%m-%d-%y")
+# print(formatted_date)
 
 # Initialize temp directories
 TEMP_EXTRACTED_PDFS_DIR = os.path.join(app.static_folder, 'tmp_extracted_pdfs')
@@ -151,16 +156,17 @@ def get_storage_client():
 def save_file_to_bucket(local_file_path, filename):
     try:
         client = get_storage_client()
-        bucket = client.bucket(BUCKET_NAME)
-        
+        # bucket = client.bucket(BUCKET_NAME)
+        bucket = client.bucket(PAPERS_BUCKET)        
+
         # Create the full path in the bucket
-        blob_name = f"{SESSION_ID}/{FILE_HASH_NUM}/papers/pdf/{filename}"
+        blob_name = f"pdf/{SESSION_ID}/{filename}"
         blob = bucket.blob(blob_name)
         
         # Upload the file
         blob.upload_from_filename(local_file_path)
         
-        public_url = f"https://storage.googleapis.com/{BUCKET_NAME}/{blob_name}"
+        public_url = f"https://storage.googleapis.com/{PAPERS_BUCKET}/{blob_name}"
         
         return blob_name, public_url
     except Exception as e:
@@ -170,10 +176,11 @@ def save_file_to_bucket(local_file_path, filename):
 def get_uploaded_files():
     try:
         client = get_storage_client()
-        bucket = client.bucket(BUCKET_NAME)
-        
+        #bucket = client.bucket(BUCKET_NAME)
+        bucket = client.bucket(PAPERS_BUCKET)
+                
         # List all blobs in the PDF directory
-        prefix = f"{SESSION_ID}/{FILE_HASH_NUM}/papers/pdf/"
+        prefix = f"pdf/{SESSION_ID}/"
         blobs = bucket.list_blobs(prefix=prefix)
         
         # Get file information
@@ -184,7 +191,7 @@ def get_uploaded_files():
                 'blob_name': blob.name,
                 'size': f"{blob.size / 1024 / 1024:.2f} MB",
                 'updated': blob.updated.strftime('%Y-%m-%d %H:%M:%S'),
-                'public_url': f"https://storage.googleapis.com/{BUCKET_NAME}/{FILE_HASH_NUM}/{blob.name}" 
+                'public_url': f"https://storage.googleapis.com/{PAPERS_BUCKET}/{blob.name}" 
             }
             files.append(file_info)
         
