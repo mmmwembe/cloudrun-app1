@@ -9,7 +9,7 @@ import pandas as pd
 from modules.process_pdfs import process_pdf
 from modules.claude_ai import create_claude_prompt, encode_pdf_to_base64, create_messages, get_completion
 from modules.groq_llama import get_llama_paper_info
-# from modules.gcp_ops import save_file_to_bucket, get_public_urls2
+from modules.gcp_ops import save_file_to_bucket, save_tracker_csv, initialize_tracker_df_from_gcp
 # save_file_to_bucket(artifact_url, session_id, file_hash_num, bucket_name, subdir="papers"
 from datetime import datetime
 
@@ -50,18 +50,20 @@ os.makedirs(TEMP_EXTRACTED_IMAGES_DIR, exist_ok=True)
 
 
 # Initialize global parent files DataFrame
-PARENT_FILES_PD = pd.DataFrame(columns=[
-    'gcp_public_url',
-    'hash',
-    'original_filename',
-    'citation_name',
-    'citation_authors',
-    'citation_year',
-    'citation_organization',
-    'citation_doi',
-    'citation_url',
-    'upload_timestamp'
-])
+# PARENT_FILES_PD = pd.DataFrame(columns=[
+#     'gcp_public_url',
+#     'hash',
+#     'original_filename',
+#     'citation_name',
+#     'citation_authors',
+#     'citation_year',
+#     'citation_organization',
+#     'citation_doi',
+#     'citation_url',
+#     'upload_timestamp'
+# ])
+
+PARENT_FILES_PD = initialize_tracker_df_from_gcp(session_id=SESSION_ID,bucket_name=BUCKET_PAPER_TRACKER_CSV)
 
 global CHILD_FILES_PD
 CHILD_FILES_PD = pd.DataFrame(columns = [
@@ -135,8 +137,8 @@ def update_parent_files_tracking(public_url):
     
     try:
         # Save updated DataFrame to GCS
-        # save_tracking_to_gcs()
-        pass
+        save_tracker_csv(PARENT_FILES_PD, SESSION_ID, BUCKET_PAPER_TRACKER_CSV)
+
     except Exception as e:
         print(f"Error saving tracking data to GCS: {e}")
 
@@ -288,7 +290,15 @@ def upload_file():
 @app.route('/goto_processfile/')
 def go_to_processfile():
     
-    num_rows = len(PARENT_FILES_PD)
+    # num_rows = len(PARENT_FILES_PD)
+    # Get DataFrame from GCS
+    df = initialize_tracker_df_from_gcp(
+        session_id=SESSION_ID,
+        bucket_name=BUCKET_PAPER_TRACKER_CSV
+    )
+    
+    # Get number of rows
+    num_rows = len(df)  # or df.shape[0]
     
     return render_template('process_file.html', number_of_files=num_rows)
 
