@@ -178,8 +178,8 @@
     <div class="container mt-5">
         <h1 class="text-center mb-4">Processing Files...</h1>
         <div id="current-url" class="text-center"></div>
-        <div id="current_index_value" class="text-center"></div>
-        <div id="total_files" class="text-center"></div>
+        <!-- <div id="current_index_value" class="text-center"></div>
+        <div id="total_files" class="text-center"></div> -->
         <div id="spinner" class="spinner"></div>
         <div id="completion-status" class="text-center">ITERATIONS DONE!</div>
     </div>
@@ -198,8 +198,8 @@
     document.addEventListener('DOMContentLoaded', function() {
         const spinner = document.getElementById('spinner');
         const currentUrl = document.getElementById('current-url');
-        const index_value = document.getElementById('current_index_value');
-        const currentTotalFiles = document.getElementById('total_files');
+        // const index_value = document.getElementById('current_index_value');
+        // const currentTotalFiles = document.getElementById('total_files');
         const completionStatus = document.getElementById('completion-status');
         const numFiles = parseInt(document.getElementById('num_of_files').value);
 
@@ -228,8 +228,8 @@
 
                 // Update status
                 currentUrl.textContent = data.gcp_public_url;
-                index_value.textContent = data.current_index;
-                currentTotalFiles.textContent = data.total_files;
+                // index_value.textContent = data.current_index;
+                // currentTotalFiles.textContent = data.total_files;
                 
                 // Increment counter
                 currentIndex++;
