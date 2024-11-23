@@ -178,7 +178,7 @@
     <div class="container mt-5">
         <h1 class="text-center mb-4">Processing Files...</h1>
         <div id="current-url" class="text-center"></div>
-        <div id="current_index" class="text-center"></div>
+        <div id="current_index_value" class="text-center"></div>
         <div id="total_files" class="text-center"></div>
         <div id="spinner" class="spinner"></div>
         <div id="completion-status" class="text-center">ITERATIONS DONE!</div>
@@ -198,7 +198,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         const spinner = document.getElementById('spinner');
         const currentUrl = document.getElementById('current-url');
-        const index_value = document.getElementById('current_index');
+        const index_value = document.getElementById('current_index_value');
         const currentTotalFiles = document.getElementById('total_files');
         const completionStatus = document.getElementById('completion-status');
         const numFiles = parseInt(document.getElementById('num_of_files').value);
