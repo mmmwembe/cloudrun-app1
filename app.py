@@ -53,34 +53,34 @@ TEMP_EXTRACTED_IMAGES_DIR = os.path.join(app.static_folder, 'tmp_extracted_image
 os.makedirs(TEMP_EXTRACTED_IMAGES_DIR, exist_ok=True)
 
 
-def read_pdf_from_url(pdf_url):
-    try:
-        # Convert Google Cloud Storage URL to direct download URL
-        pdf_url = pdf_url.replace("storage.cloud.google.com", "storage.googleapis.com")
+# def read_pdf_from_url(pdf_url):
+#     try:
+#         # Convert Google Cloud Storage URL to direct download URL
+#         pdf_url = pdf_url.replace("storage.cloud.google.com", "storage.googleapis.com")
 
-        # Download the PDF
-        response = requests.get(pdf_url)
-        response.raise_for_status()  # Raise an exception for bad status codes
+#         # Download the PDF
+#         response = requests.get(pdf_url)
+#         response.raise_for_status()  # Raise an exception for bad status codes
 
-        # Create a temporary file to store the PDF
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
-            temp_file.write(response.content)
-            temp_path = temp_file.name
+#         # Create a temporary file to store the PDF
+#         with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
+#             temp_file.write(response.content)
+#             temp_path = temp_file.name
 
-        # Use PyPDFLoader to load the PDF
-        loader = PyPDFLoader(temp_path)
+#         # Use PyPDFLoader to load the PDF
+#         loader = PyPDFLoader(temp_path)
 
-        # Load and split the document into pages
-        pages = loader.load_and_split()
+#         # Load and split the document into pages
+#         pages = loader.load_and_split()
 
-        # Extract text from all pages
-        text_content = "\n\n".join([page.page_content for page in pages])
+#         # Extract text from all pages
+#         text_content = "\n\n".join([page.page_content for page in pages])
 
-        return text_content
+#         return text_content
 
-    except Exception as e:
-        print(f"Error reading PDF: {e}")
-        return None
+#     except Exception as e:
+#         print(f"Error reading PDF: {e}")
+#         return None
 
 
 # Initialize global parent files DataFrame
@@ -351,9 +351,9 @@ def process_files():
     extracted_text = extract_text_from_pdf(current_file_public_url)
     extracted_text_str = str(extracted_text)
     # extracted_text = read_pdf_from_url(current_file_public_url)
-    # llm_json_output = llm_parsed_output_from_text (extracted_text)
-    # llm_json_output_string = json.dumps(llm_json_output)
-    llm_json_output_string ="This is a test"
+    llm_json_output = llm_parsed_output_from_text (extracted_text)
+    llm_json_output_string = json.dumps(llm_json_output)
+    #llm_json_output_string ="This is a test"
     
     
     return jsonify({
@@ -361,7 +361,7 @@ def process_files():
         'gcp_public_url': current_file['gcp_public_url'],
         'current_index': current_index,
         'total_files': len(PARENT_FILES_PD),
-        'extracted_text': extracted_text,
+        'extracted_text': extracted_text_str,
         'llm_json_output': llm_json_output_string,
     })
 
