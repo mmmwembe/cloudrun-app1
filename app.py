@@ -17,6 +17,7 @@ import requests
 from langchain_community.document_loaders import PyPDFLoader
 import tempfile
 from modules.utils import extract_text_from_pdf
+import time
 
 load_dotenv()
 
@@ -354,6 +355,7 @@ def process_files():
     llm_json_output = llm_parsed_output_from_text (extracted_text)
     llm_json_output_string = json.dumps(llm_json_output)
     #llm_json_output_string ="This is a test"
+    time.sleep(65)
     
     
     return jsonify({
