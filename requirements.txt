@@ -10,6 +10,7 @@ anthropic
 PyPDF2
 Groq
 langchain
+langchain_groq
 requests
 beautifulsoup4
 langchain-community
