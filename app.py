@@ -16,6 +16,7 @@ from modules.llm_ops import llm_parsed_output_from_text, create_messages, llm_wi
 import requests
 from langchain_community.document_loaders import PyPDFLoader
 import tempfile
+from modules.utils import extract_text_from_pdf
 
 load_dotenv()
 
@@ -346,7 +347,9 @@ def process_files():
     current_file = PARENT_FILES_PD.iloc[current_index]
     
     current_file_public_url = current_file['gcp_public_url']
-    extracted_text = encode_pdf_to_base64(current_file_public_url)
+    # extracted_text = encode_pdf_to_base64(current_file_public_url)
+    extracted_text = extract_text_from_pdf(current_file_public_url)
+    extracted_text_str = str(extracted_text)
     # extracted_text = read_pdf_from_url(current_file_public_url)
     # llm_json_output = llm_parsed_output_from_text (extracted_text)
     # llm_json_output_string = json.dumps(llm_json_output)

@@ -8,6 +8,7 @@ Werkzeug>=2.2.2
 Pillow
 anthropic
 PyPDF2
+pypdf
 Groq
 langchain
 langchain_groq
