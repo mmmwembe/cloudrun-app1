@@ -346,7 +346,8 @@ def process_files():
     current_file = PARENT_FILES_PD.iloc[current_index]
     
     current_file_public_url = current_file['gcp_public_url']
-    extracted_text = read_pdf_from_url(current_file_public_url)
+    extracted_text = encode_pdf_to_base64(current_file_public_url)
+    # extracted_text = read_pdf_from_url(current_file_public_url)
     # llm_json_output = llm_parsed_output_from_text (extracted_text)
     # llm_json_output_string = json.dumps(llm_json_output)
     llm_json_output_string ="This is a test"
