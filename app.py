@@ -12,7 +12,7 @@ from modules.groq_llama import get_llama_paper_info
 from modules.gcp_ops import save_file_to_bucket, save_tracker_csv, initialize_tracker_df_from_gcp
 # save_file_to_bucket(artifact_url, session_id, file_hash_num, bucket_name, subdir="papers"
 from datetime import datetime
-from modules.llm_ops import GROQ_API_KEY
+from modules.llm_ops import GROQ_API_KEY, llm
 
 load_dotenv()
 
