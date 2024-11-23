@@ -192,6 +192,8 @@
 
     <div class="container mt-5 text-center">
         <img src="/static/pdf-work-flow/mermaid-diagram-worfklow.svg" alt="Processing Workflow" style="width: 60%;">
+        <div id="extracted_text" class="text-center"></div>
+        <div id="llm_json_output" class="text-center"></div>
     </div>
 
     <script>
@@ -202,6 +204,10 @@
         const currentTotalFiles = document.getElementById('total_files');
         const completionStatus = document.getElementById('completion-status');
         const numFiles = parseInt(document.getElementById('num_of_files').value);
+
+
+        const extracted_text = document.getElementById('extracted_text');
+        const llm_json_output = document.getElementById('llm_json_output');
 
         let currentIndex = 0;
         
@@ -231,6 +237,9 @@
                 index_value.textContent = data.current_index;
                 currentTotalFiles.textContent = data.total_files;
                 
+                extracted_text.textContent = data.extracted_text;
+                llm_json_output.textContent = data.llm_json_output;
+
                 // Increment counter
                 currentIndex++;
 

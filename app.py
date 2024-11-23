@@ -12,7 +12,7 @@ from modules.groq_llama import get_llama_paper_info
 from modules.gcp_ops import save_file_to_bucket, save_tracker_csv, initialize_tracker_df_from_gcp
 # save_file_to_bucket(artifact_url, session_id, file_hash_num, bucket_name, subdir="papers"
 from datetime import datetime
-from modules.llm_ops import GROQ_API_KEY, llm
+from modules.llm_ops import GROQ_API_KEY, llm, read_pdf_from_url, llm_parsed_output_from_text, create_messages, llm_with_JSON_output
 
 load_dotenv()
 
@@ -304,17 +304,27 @@ def go_to_processfile():
 
 @app.route('/process_files/', methods=['POST'])
 def process_files():
+    
     current_index = int(request.json.get('index', 0))
     
     if current_index >= len(PARENT_FILES_PD):
         return jsonify({'done': True})
         
     current_file = PARENT_FILES_PD.iloc[current_index]
+    
+    current_file_public_url = current_file['gcp_public_url']
+    extracted_text = read_pdf_from_url(current_file_public_url)
+    llm_json_output = llm_parsed_output_from_text (extracted_text)
+    llm_json_output_string = json.dumps(llm_json_output)
+    
+    
     return jsonify({
         'done': False,
         'gcp_public_url': current_file['gcp_public_url'],
         'current_index': current_index,
-        'total_files': len(PARENT_FILES_PD)
+        'total_files': len(PARENT_FILES_PD),
+        'extracted_text': extracted_text,
+        'llm_json_output': llm_json_output_string,
     })
 
 
