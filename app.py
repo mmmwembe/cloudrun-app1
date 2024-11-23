@@ -324,7 +324,7 @@ def process_files():
         'gcp_public_url': current_file['gcp_public_url'],
         'current_index': current_index,
         'total_files': len(PARENT_FILES_PD),
-        'extracted_text': extracted_text,
+        'extracted_text': extracted_text[:1000],
         'llm_json_output': llm_json_output_string,
     })
 
