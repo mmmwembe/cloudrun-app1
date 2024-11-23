@@ -3,13 +3,9 @@ gunicorn==21.2.0
 python-dotenv==1.0.0
 pandas
 google-cloud-storage
-PyMuPDF
+pymupdf
 Werkzeug>=2.2.2
 Pillow
 anthropic
 PyPDF2
 Groq
-langchain
-requests
-beautifulsoup4
-langchain-community
