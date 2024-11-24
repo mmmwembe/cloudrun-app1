@@ -19,7 +19,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Get the Google service account JSON from environment variable
-GROQ_API_KEY = os.getenv('GROQ_API_KEY')
+# GROQ_API_KEY = os.getenv('GROQ_API_KEY')
+GROQ_API_KEY = os.getenv('GROQ_API_KEY2')
 # Get the Google service account JSON from environment variable
 secret_json = os.getenv('GOOGLE_SECRET_JSON')
 
