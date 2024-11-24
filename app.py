@@ -463,11 +463,11 @@ def process_files():
     current_index = int(request.json.get('index', 0))
     
     # Check if the index exceeds the length of the DataFrame
-    if current_index >= len(PROCESS_FILES_PD):
+    if current_index >= len(PARENT_FILES_PD):
         return jsonify({'done': True}), 200
         
     # Get the current file from the DataFrame
-    current_file = PROCESS_FILES_PD.iloc[current_index]
+    current_file = PARENT_FILES_PD.iloc[current_index]
     
     # Extract necessary information from the current file
     public_url = current_file['gcp_public_url']
