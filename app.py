@@ -386,12 +386,12 @@ def process_files():
     PROCESSED_FILES_PD = load_or_initialize_processed_files_df(session_id=SESSION_ID,bucket_name=PAPERS_PROCESSED_BUCKET)
     
     # This updates PROCESSED_FILES_PD
-    # filename, citation, result, pdf_text_content, llm_json_output, PROCESSED_FILES_PD = update_processed_files_df_tracking(public_url, citation, SESSION_ID, BUCKET_EXTRACTED_IMAGES,PROCESSED_FILES_PD)
+    filename, citation, result, pdf_text_content, llm_json_output, PROCESSED_FILES_PD = update_processed_files_df_tracking(public_url, citation, SESSION_ID, BUCKET_EXTRACTED_IMAGES,PROCESSED_FILES_PD)
 
     
     # Save PD
-    processed_files_csv_url = f"https://storage.googleapis.com/{PAPERS_PROCESSED_BUCKET}/csv/{SESSION_ID}/{SESSION_ID}.csv"
-    # processed_files_csv_url = save_df_to_gcs(PROCESSED_FILES_PD, PAPERS_PROCESSED_BUCKET, SESSION_ID) 
+    # processed_files_csv_url = f"https://storage.googleapis.com/{PAPERS_PROCESSED_BUCKET}/csv/{SESSION_ID}/{SESSION_ID}.csv"
+    processed_files_csv_url = save_df_to_gcs(PROCESSED_FILES_PD, PAPERS_PROCESSED_BUCKET, SESSION_ID) 
     
     time.sleep(65)
     
