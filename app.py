@@ -376,24 +376,25 @@ def process_files():
     # citation_string = json.dumps(citation, indent=4)
     
 
-    # result = extract_images_and_metadata_from_pdf(public_url, SESSION_ID, BUCKET_EXTRACTED_IMAGES)
-    # result_string = json.dumps(result, indent=4)
+    result = extract_images_and_metadata_from_pdf(public_url, SESSION_ID, BUCKET_EXTRACTED_IMAGES)
+    result_string = json.dumps(result, indent=4)
     
-    # extracted_text = extract_text_from_pdf(public_url)
-    # extracted_text_str = str(extracted_text)
+    pdf_text_content= extract_text_from_pdf(public_url)
+    extracted_text_str = str(pdf_text_content)
     
-    # llm_json_output = llm_with_JSON_output(extracted_text)
-    # llm_json_output_string = json.dumps(llm_json_output)
+    llm_json_output = llm_with_JSON_output(pdf_text_content)
+    llm_json_output_string = json.dumps(llm_json_output)
     
     # This updates PROCESSED_FILES_PD
-    filename, citation, result, pdf_text_content, llm_json_output,PROCESSED_FILES_PD = update_processed_files_df_tracking(public_url, citation, SESSION_ID, BUCKET_EXTRACTED_IMAGES,PROCESSED_FILES_PD)
+    # filename, citation, result, pdf_text_content, llm_json_output, PROCESSED_FILES_PD = update_processed_files_df_tracking(public_url, citation, SESSION_ID, BUCKET_EXTRACTED_IMAGES,PROCESSED_FILES_PD)
     citation_string = json.dumps(citation, indent=4)
     result_string = json.dumps(result, indent=4)
     extracted_text_str = str(pdf_text_content)
     llm_json_output_string = json.dumps(llm_json_output)
     
     # Save PD
-    processed_files_csv_url = save_df_to_gcs(PROCESSED_FILES_PD, PAPERS_PROCESSED_BUCKET, SESSION_ID) 
+    processed_files_csv_url = f"https://storage.googleapis.com/{PAPERS_PROCESSED_BUCKET}/csv/{SESSION_ID}/{SESSION_ID}.csv"
+    # processed_files_csv_url = save_df_to_gcs(PROCESSED_FILES_PD, PAPERS_PROCESSED_BUCKET, SESSION_ID) 
     
     time.sleep(65)
     
