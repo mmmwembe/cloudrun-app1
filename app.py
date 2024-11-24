@@ -14,6 +14,7 @@ from modules.gcp_ops import save_file_to_bucket, save_tracker_csv, initialize_tr
 from datetime import datetime
 from modules.llm_ops import llm_parsed_output_from_text, create_messages, llm_with_JSON_output
 from modules.pdf_image_and_metadata_handler import extract_images_and_metadata_from_pdf
+from modules.pandas_and_gcp import save_df_to_gcs, load_or_initialize_df
 import requests
 from langchain_community.document_loaders import PyPDFLoader
 import tempfile
@@ -99,7 +100,9 @@ os.makedirs(TEMP_EXTRACTED_IMAGES_DIR, exist_ok=True)
 #     'upload_timestamp'
 # ])
 
-PARENT_FILES_PD = initialize_tracker_df_from_gcp(session_id=SESSION_ID,bucket_name=BUCKET_PAPER_TRACKER_CSV)
+# PARENT_FILES_PD = initialize_tracker_df_from_gcp(session_id=SESSION_ID,bucket_name=BUCKET_PAPER_TRACKER_CSV)
+
+PARENT_FILES_PD = initialize_tracker_df_from_gcp(session_id=SESSION_ID,bucket_name=PAPERS_BUCKET)
 
 global CHILD_FILES_PD
 CHILD_FILES_PD = pd.DataFrame(columns = [
@@ -370,6 +373,9 @@ def process_files():
     llm_json_output_string = json.dumps(llm_json_output)
     #llm_json_output_string ="This is a test"
     time.sleep(65)
+    
+    
+    # TO-DO: UPDATE PARENT_FILES_PD 
     
 
     return jsonify({
