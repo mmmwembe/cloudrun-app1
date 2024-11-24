@@ -553,19 +553,34 @@ def process_files():
             print(f"Error processing species: {species.get('species_name', 'Unknown')} - {e}")
             continue  # Continue to next species on error
 
-    # Append new rows to PROCESSED_FILES_PD
-    new_df = pd.DataFrame(new_rows)
-    for col in PROCESSED_FILES_PD.columns:
-        new_df[col] = new_df[col].astype(PROCESSED_FILES_PD[col].dtype)
-    PROCESSED_FILES_PD = pd.concat([PROCESSED_FILES_PD, new_df], ignore_index=True)
+    # Try to append new rows to PROCESSED_FILES_PD
+    try:
+        # Create DataFrame for new rows
+        new_df = pd.DataFrame(new_rows)
+
+        # Ensure the new DataFrame matches the schema of the existing DataFrame
+        for col in PROCESSED_FILES_PD.columns:
+            new_df[col] = new_df[col].astype(PROCESSED_FILES_PD[col].dtype)
+
+        # Append the new rows to the existing DataFrame
+        PROCESSED_FILES_PD = pd.concat([PROCESSED_FILES_PD, new_df], ignore_index=True)
+
+    except Exception as e:
+        print(f"Error appending rows to DataFrame: {e}")
+        return jsonify({'done': False, 'error': 'Failed to append rows to DataFrame'}), 500
 
     # Save updated DataFrame as a temporary CSV file
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as temp_csv:
-        PROCESSED_FILES_PD.to_csv(temp_csv.name, index=False)
-        local_file_path = temp_csv.name  # Path to the temp CSV file
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as temp_csv:
+            PROCESSED_FILES_PD.to_csv(temp_csv.name, index=False)
+            local_file_path = temp_csv.name  # Path to the temp CSV file
 
-    # Upload the temp CSV to GCP bucket
-    public_url = save_csv_to_bucket_v2(local_file_path=local_file_path, bucket_name=PAPERS_PROCESSED_BUCKET, session_id=SESSION_ID)
+        # Upload the temp CSV to GCP bucket
+        public_url = save_csv_to_bucket_v2(local_file_path=local_file_path, bucket_name=PAPERS_PROCESSED_BUCKET, session_id=SESSION_ID)
+
+    except Exception as e:
+        print(f"Error saving CSV to GCP: {e}")
+        return jsonify({'done': False, 'error': 'Failed to save CSV to GCP'}), 500
 
     return jsonify({
         'done': False,
@@ -578,6 +593,7 @@ def process_files():
         'citation': json.dumps(citation),
         'processed_files_csv_url': public_url,
     })
+
 
 
 
