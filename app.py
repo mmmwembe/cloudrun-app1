@@ -153,30 +153,6 @@ def initialize_or_load_processed_files_df2(public_url: str) -> pd.DataFrame:
     return df
 
 
-# global CHILD_FILES_PD
-# CHILD_FILES_PD = pd.DataFrame(columns = [
-#     # Child-specific fields
-#     'child_pdf_file_url',
-#     'has_images',
-#     'num_of_images',
-#     'page_number',
-#     'image_urls_array',
-    
-#     # Parent fields from PARENT_FILES_PD
-#     'gcp_public_url',
-#     'hash',
-#     'original_filename',
-#     'citation_name',
-#     'citation_authors',
-#     'citation_year',
-#     'citation_organization',
-#     'citation_doi',
-#     'citation_url',
-#     'upload_timestamp'
-# ])
-
-
-
 def get_default_citation():
     return {
         'name': "Stuart R. Stidolph Diatom Atlas",
@@ -480,7 +456,7 @@ def go_to_processfile():
 #     })
 
 
-import tempfile
+
 
 @app.route('/process_files/', methods=['POST'])
 def process_files():
@@ -515,63 +491,67 @@ def process_files():
     # Process each species in the parsed output
     new_rows = []
     for species in parsed_output.get('diatom_species_array', []):
-        # Extract species details
-        species_index = species.get('species_index', '')
-        species_name = species.get('species_name', '')
-        species_authors = species.get('species_authors', [])
-        species_year = species.get('species_year', '')
-        species_references = species.get('species_references', [])
-        formatted_species_name = species.get('formatted_species_name', '')
-        genus = species.get('genus', '')
-        species_magnification = species.get('species_magnification', '')
-        species_scale_bar_microns = species.get('species_scale_bar_microns', '')
-        species_note = species.get('species_note', '')
+        try:
+            # Extract species details
+            species_index = species.get('species_index', '')
+            species_name = species.get('species_name', '')
+            species_authors = species.get('species_authors', [])
+            species_year = species.get('species_year', '')
+            species_references = species.get('species_references', [])
+            formatted_species_name = species.get('formatted_species_name', '')
+            genus = species.get('genus', '')
+            species_magnification = species.get('species_magnification', '')
+            species_scale_bar_microns = species.get('species_scale_bar_microns', '')
+            species_note = species.get('species_note', '')
 
-        # Create a new row for the species
-        new_row = {
-            'gcp_public_url': public_url,
-            'original_filename': filename,
-            'pdf_text_content': pdf_text_content,
-            'file_256_hash': result.get('file_256_hash', ''),
-            'citation_name': citation.get('name', ''),
-            'citation_authors': ', '.join(citation.get('authors', [])),
-            'citation_year': citation.get('year', ''),
-            'citation_organization': citation.get('organization', ''),
-            'citation_doi': citation.get('doi', ''),
-            'citation_url': citation.get('url', ''),
-            'upload_timestamp': pd.Timestamp.now(),
-            'processed': True,
-            'images_in_doc': result.get('images_in_doc', []),
-            'paper_image_urls': result.get('paper_image_urls', []),
-            'species_id': uuid.uuid4().hex,
-            'species_index': species_index,
-            'species_name': species_name,
-            'species_authors': species_authors,
-            'species_year': species_year,
-            'species_references': species_references,
-            'formatted_species_name': formatted_species_name,
-            'genus': genus,
-            'species_magnification': species_magnification,
-            'species_scale_bar_microns': species_scale_bar_microns,
-            'species_note': species_note,
-            'figure_caption': figure_caption,
-            'source_material_location': source_material_location,
-            'source_material_coordinates': source_material_coordinates,
-            'source_material_description': source_material_description,
-            'source_material_received_from': source_material_received_from,
-            'source_material_date_received': source_material_date_received,
-            'source_material_note': source_material_note,
-            'cropped_image_url': "",
-            'embeddings_256': [],
-            'embeddings_512': [],
-            'embeddings_1024': [],
-            'embeddings_2048': [],
-            'embeddings_4096': [],
-            'bbox_top_left_bottom_right': "",
-            'yolo_bbox': "",
-            'segmentation': ""
-        }
-        new_rows.append(new_row)
+            # Create a new row for the species
+            new_row = {
+                'gcp_public_url': public_url,
+                'original_filename': filename,
+                'pdf_text_content': pdf_text_content,
+                'file_256_hash': result.get('file_256_hash', ''),
+                'citation_name': citation.get('name', ''),
+                'citation_authors': ', '.join(citation.get('authors', [])),
+                'citation_year': citation.get('year', ''),
+                'citation_organization': citation.get('organization', ''),
+                'citation_doi': citation.get('doi', ''),
+                'citation_url': citation.get('url', ''),
+                'upload_timestamp': pd.Timestamp.now(),
+                'processed': True,
+                'images_in_doc': result.get('images_in_doc', []),
+                'paper_image_urls': result.get('paper_image_urls', []),
+                'species_id': uuid.uuid4().hex,
+                'species_index': species_index,
+                'species_name': species_name,
+                'species_authors': species_authors,
+                'species_year': species_year,
+                'species_references': species_references,
+                'formatted_species_name': formatted_species_name,
+                'genus': genus,
+                'species_magnification': species_magnification,
+                'species_scale_bar_microns': species_scale_bar_microns,
+                'species_note': species_note,
+                'figure_caption': figure_caption,
+                'source_material_location': source_material_location,
+                'source_material_coordinates': source_material_coordinates,
+                'source_material_description': source_material_description,
+                'source_material_received_from': source_material_received_from,
+                'source_material_date_received': source_material_date_received,
+                'source_material_note': source_material_note,
+                'cropped_image_url': "",
+                'embeddings_256': [],
+                'embeddings_512': [],
+                'embeddings_1024': [],
+                'embeddings_2048': [],
+                'embeddings_4096': [],
+                'bbox_top_left_bottom_right': "",
+                'yolo_bbox': "",
+                'segmentation': ""
+            }
+            new_rows.append(new_row)
+        except Exception as e:
+            print(f"Error processing species: {species.get('species_name', 'Unknown')} - {e}")
+            continue  # Continue to next species on error
 
     # Append new rows to PROCESSED_FILES_PD
     new_df = pd.DataFrame(new_rows)
@@ -584,11 +564,8 @@ def process_files():
         PROCESSED_FILES_PD.to_csv(temp_csv.name, index=False)
         local_file_path = temp_csv.name  # Path to the temp CSV file
 
-    # Define the GCS bucket path
-    gcs_path = f"csv/{SESSION_ID}/{SESSION_ID}.csv"
-
     # Upload the temp CSV to GCP bucket
-    public_url = save_csv_to_bucket_v2(local_file_path=local_file_path,bucket_name=PAPERS_PROCESSED_BUCKET,session_id=SESSION_ID)
+    public_url = save_csv_to_bucket_v2(local_file_path=local_file_path, bucket_name=PAPERS_PROCESSED_BUCKET, session_id=SESSION_ID)
 
     return jsonify({
         'done': False,
