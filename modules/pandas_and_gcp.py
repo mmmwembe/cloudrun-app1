@@ -132,7 +132,7 @@ def load_or_initialize_processed_files_df(bucket_name: str, session_id: str) -> 
         return None
 
 
-def update_processed_files_df_tracking(public_url, citation, session_id, extracted_images_bucket_name):
+def update_processed_files_df_tracking(public_url, citation, session_id, extracted_images_bucket_name,PROCESSED_FILES_PD):
     """
     Update the PROCESSED_FILES_PD DataFrame with file information and citation details.
     Extracts filename from the public_url and processes the PDF to update additional fields.
@@ -146,7 +146,7 @@ def update_processed_files_df_tracking(public_url, citation, session_id, extract
     Returns:
         tuple: (filename, citation, result, pdf_text_content, parsed_output)
     """
-    global PROCESSED_FILES_PD
+    #global PROCESSED_FILES_PD
 
     # Extract filename from the public_url
     filename = public_url.split('/')[-1]
