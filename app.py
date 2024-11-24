@@ -14,7 +14,7 @@ from modules.gcp_ops import save_file_to_bucket, save_tracker_csv, initialize_pa
 from datetime import datetime
 from modules.llm_ops import llm_parsed_output_from_text, create_messages, llm_with_JSON_output
 from modules.pdf_image_and_metadata_handler import extract_images_and_metadata_from_pdf
-from modules.pandas_and_gcp import save_df_to_gcs, load_or_initialize_processed_files_df
+from modules.pandas_and_gcp import save_df_to_gcs, load_or_initialize_processed_files_df, update_processed_files_df_tracking
 import requests
 from langchain_community.document_loaders import PyPDFLoader
 import tempfile
@@ -103,7 +103,19 @@ os.makedirs(TEMP_EXTRACTED_IMAGES_DIR, exist_ok=True)
 
 # PARENT_FILES_PD = initialize_tracker_df_from_gcp(session_id=SESSION_ID,bucket_name=BUCKET_PAPER_TRACKER_CSV)
 
-PARENT_FILES_PD = initialize_paper_upload_tracker_df_from_gcp(session_id=SESSION_ID,bucket_name=BUCKET_PAPER_TRACKER_CSV)
+# Initialize df tracker for the uploaded files (before being processed)
+# updating this df is made with update_uploaded_files_tracking(public_url)
+# Update of this df is performed in @app.route('/', methods=['GET', 'POST']) route
+# Saving of this df to GCP is perfomred in update_uploaded_files_tracking(public_url) with save_tracker_csv(PARENT_FILES_PD, SESSION_ID, BUCKET_PAPER_TRACKER_CSV)
+PARENT_FILES_PD = initialize_paper_upload_tracker_df_from_gcp(session_id=SESSION_ID,bucket_name=BUCKET_PAPER_TRACKER_CSV) #
+
+# Initialize df tracker for processed pdf files 
+# Update of PD is made with update_processed_files_df_tracking(public_url, citation, session_id, extracted_images_bucket_name)
+# Update of this df is performed in @app.route('/process_files/', methods=['POST']) route
+# Saving of this df to GCP is performed in route('/process_files/', methods=['POST']) route with save_df_to_gcs(PROCESSED_FILES_PD, PAPERS_PROCESSED_BUCKET, SESSION_ID) 
+PROCESSED_FILES_PD = load_or_initialize_processed_files_df(session_id=SESSION_ID,bucket_name=PAPERS_PROCESSED_BUCKET)
+
+
 
 global CHILD_FILES_PD
 CHILD_FILES_PD = pd.DataFrame(columns = [
@@ -353,28 +365,35 @@ def process_files():
         
     current_file = PARENT_FILES_PD.iloc[current_index]
     
-    current_file_public_url = current_file['gcp_public_url']
+    public_url = current_file['gcp_public_url']
     
         # Extract filename from the public_url
-    filename = current_file_public_url.split('/')[-1]
+    filename = public_url.split('/')[-1]
 
     # Get default citation info
     citation = get_default_citation()
-    citation_string = json.dumps(citation, indent=4)
+    # citation_string = json.dumps(citation, indent=4)
     
 
-    result = extract_images_and_metadata_from_pdf(current_file_public_url, SESSION_ID, BUCKET_EXTRACTED_IMAGES)
-    # Convert the result dictionary to a JSON string
-    result_string = json.dumps(result, indent=4)
+    # result = extract_images_and_metadata_from_pdf(public_url, SESSION_ID, BUCKET_EXTRACTED_IMAGES)
+    # result_string = json.dumps(result, indent=4)
     
-    # extracted_text = encode_pdf_to_base64(current_file_public_url)
-    extracted_text = extract_text_from_pdf(current_file_public_url)
-    extracted_text_str = str(extracted_text)
-    # extracted_text = read_pdf_from_url(current_file_public_url)
-    #llm_json_output = llm_parsed_output_from_text(extracted_text)
-    llm_json_output = llm_with_JSON_output(extracted_text)
+    # extracted_text = extract_text_from_pdf(public_url)
+    # extracted_text_str = str(extracted_text)
+    
+    # llm_json_output = llm_with_JSON_output(extracted_text)
+    # llm_json_output_string = json.dumps(llm_json_output)
+    
+    # This updates PROCESSED_FILES_PD
+    filename, citation, result, pdf_text_content, llm_json_output = update_processed_files_df_tracking(public_url, citation, SESSION_ID, BUCKET_EXTRACTED_IMAGES)
+    citation_string = json.dumps(citation, indent=4)
+    result_string = json.dumps(result, indent=4)
+    extracted_text_str = str(pdf_text_content)
     llm_json_output_string = json.dumps(llm_json_output)
-    #llm_json_output_string ="This is a test"
+    
+    # Save PD
+    save_df_to_gcs(PROCESSED_FILES_PD, PAPERS_PROCESSED_BUCKET, SESSION_ID) 
+    
     time.sleep(65)
     
     

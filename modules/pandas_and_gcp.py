@@ -132,29 +132,28 @@ def load_or_initialize_processed_files_df(bucket_name: str, session_id: str) -> 
         return None
 
 
-def update_parent_files_tracking(public_url, citation, session_id, extracted_images_bucket_name):
+def update_processed_files_df_tracking(public_url, citation, session_id, extracted_images_bucket_name):
     """
-    Update the PARENT_FILES_PD DataFrame with file information and citation details.
+    Update the PROCESSED_FILES_PD DataFrame with file information and citation details.
     Extracts filename from the public_url and processes the PDF to update additional fields.
 
     Args:
         public_url (str): The public URL from GCP storage.
+        citation (dict): Citation information for the document.
+        session_id (str): The session ID for tracking.
+        extracted_images_bucket_name (str): The bucket where extracted images will be stored.
 
     Returns:
         tuple: (filename, citation, result, pdf_text_content, parsed_output)
     """
-    global PARENT_FILES_PD
+    global PROCESSED_FILES_PD
 
     # Extract filename from the public_url
     filename = public_url.split('/')[-1]
 
-    # Get default citation info
-    # citation = get_default_citation()
-
     # Process the PDF and get details
     result = extract_images_and_metadata_from_pdf(public_url, session_id, extracted_images_bucket_name)
     print("-----------------result---------------")
-    #print(result)
     # Extract information from the result
     file_256_hash = result.get('file_256_hash', '')
     images_in_doc = result.get('images_in_doc', [])
@@ -165,10 +164,8 @@ def update_parent_files_tracking(public_url, citation, session_id, extracted_ima
 
     # Get dictionary of LLM output
     parsed_output = llm_with_JSON_output(pdf_text_content)
-    #print("-----------------parsed output---------------")
-    #print(parsed_output)
 
-    # Set variables
+    # Set variables for source material and species (with default empty values)
     figure_caption = parsed_output.get('figure_caption', '')
     source_material_location = parsed_output.get('source_material_location', '')
     source_material_coordinates = parsed_output.get('source_material_coordinates', '')
@@ -177,10 +174,11 @@ def update_parent_files_tracking(public_url, citation, session_id, extracted_ima
     source_material_date_received = parsed_output.get('source_material_date_received', '')
     source_material_note = parsed_output.get('source_material_note', '')
 
+    # Default to processed as False unless species are found
     processed = False
+    species_index, species_name, species_authors, species_year, species_references, formatted_species_name, genus, species_magnification, species_scale_bar_microns, species_note = '', '', [], '', [], '', '', '', '', ''
 
-    # Iterate through species array
-    #print("\nSpecies Information:")
+    # Iterate through species array and update variables
     for species in parsed_output.get('diatom_species_array', []):
         species_index = species.get('species_index', '')
         species_name = species.get('species_name', '')
@@ -192,18 +190,7 @@ def update_parent_files_tracking(public_url, citation, session_id, extracted_ima
         species_magnification = species.get('species_magnification', '')
         species_scale_bar_microns = species.get('species_scale_bar_microns', '')
         species_note = species.get('species_note', '')
-        processed = True
-
-        # print(f"\nSpecies {species_index}:")
-        # print("Name:", species_name)
-        # print("Authors:", species_authors)
-        # print("Year:", species_year)
-        # print("References:", species_references)
-        # print("Formatted Name:", formatted_species_name)
-        # print("Genus:", genus)
-        # print("Magnification:", species_magnification)
-        # print("Scale Bar (microns):", species_scale_bar_microns)
-        # print("Note:", species_note)
+        processed = True  # Set processed to True when species are found
 
     # Create new row data with default empty values
     new_row = {
@@ -265,9 +252,9 @@ def update_parent_files_tracking(public_url, citation, session_id, extracted_ima
 
     # Add new row to DataFrame
     new_df = pd.DataFrame([new_row])
-    for col in PARENT_FILES_PD.columns:
-        new_df[col] = new_df[col].astype(PARENT_FILES_PD[col].dtype)
-    PARENT_FILES_PD = pd.concat([PARENT_FILES_PD, new_df], ignore_index=True)
+    for col in PROCESSED_FILES_PD.columns:
+        new_df[col] = new_df[col].astype(PROCESSED_FILES_PD[col].dtype)
+    PROCESSED_FILES_PD = pd.concat([PROCESSED_FILES_PD, new_df], ignore_index=True)
 
     try:
         # Save updated DataFrame to GCS (commented out as an example)
@@ -277,3 +264,156 @@ def update_parent_files_tracking(public_url, citation, session_id, extracted_ima
 
     # Return the required values
     return filename, citation, result, pdf_text_content, parsed_output
+
+# filename, citation, result, pdf_text_content, parsed_output = update_processed_files_df_tracking(
+#     public_url,
+#     citation,
+#     SESSION_ID,
+#     BUCKET_EXTRACTED_IMAGES
+# )
+
+# def update_processed_files_df_tracking(public_url, citation, session_id, extracted_images_bucket_name):
+#     """
+#     Update the PARENT_FILES_PD DataFrame with file information and citation details.
+#     Extracts filename from the public_url and processes the PDF to update additional fields.
+
+#     Args:
+#         public_url (str): The public URL from GCP storage.
+
+#     Returns:
+#         tuple: (filename, citation, result, pdf_text_content, parsed_output)
+#     """
+#     global PROCESSED_FILES_PD
+
+#     # Extract filename from the public_url
+#     filename = public_url.split('/')[-1]
+
+#     # Get default citation info
+#     # citation = get_default_citation()
+
+#     # Process the PDF and get details
+#     result = extract_images_and_metadata_from_pdf(public_url, session_id, extracted_images_bucket_name)
+#     print("-----------------result---------------")
+#     #print(result)
+#     # Extract information from the result
+#     file_256_hash = result.get('file_256_hash', '')
+#     images_in_doc = result.get('images_in_doc', [])
+#     paper_image_urls = result.get('paper_image_urls', [])
+
+#     # Extract all text from the pdf
+#     pdf_text_content = extract_text_from_pdf(public_url)
+
+#     # Get dictionary of LLM output
+#     parsed_output = llm_with_JSON_output(pdf_text_content)
+#     #print("-----------------parsed output---------------")
+#     #print(parsed_output)
+
+#     # Set variables
+#     figure_caption = parsed_output.get('figure_caption', '')
+#     source_material_location = parsed_output.get('source_material_location', '')
+#     source_material_coordinates = parsed_output.get('source_material_coordinates', '')
+#     source_material_description = parsed_output.get('source_material_description', '')
+#     source_material_received_from = parsed_output.get('source_material_received_from', '')
+#     source_material_date_received = parsed_output.get('source_material_date_received', '')
+#     source_material_note = parsed_output.get('source_material_note', '')
+
+#     processed = False
+
+#     # Iterate through species array
+#     #print("\nSpecies Information:")
+#     for species in parsed_output.get('diatom_species_array', []):
+#         species_index = species.get('species_index', '')
+#         species_name = species.get('species_name', '')
+#         species_authors = species.get('species_authors', [])
+#         species_year = species.get('species_year', '')
+#         species_references = species.get('species_references', [])
+#         formatted_species_name = species.get('formatted_species_name', '')
+#         genus = species.get('genus', '')
+#         species_magnification = species.get('species_magnification', '')
+#         species_scale_bar_microns = species.get('species_scale_bar_microns', '')
+#         species_note = species.get('species_note', '')
+#         processed = True
+
+#         # print(f"\nSpecies {species_index}:")
+#         # print("Name:", species_name)
+#         # print("Authors:", species_authors)
+#         # print("Year:", species_year)
+#         # print("References:", species_references)
+#         # print("Formatted Name:", formatted_species_name)
+#         # print("Genus:", genus)
+#         # print("Magnification:", species_magnification)
+#         # print("Scale Bar (microns):", species_scale_bar_microns)
+#         # print("Note:", species_note)
+
+#     # Create new row data with default empty values
+#     new_row = {
+#         # File and URL information
+#         'gcp_public_url': public_url,
+#         'original_filename': filename,
+#         'pdf_text_content': pdf_text_content,
+#         'file_256_hash': file_256_hash,
+
+#         # Citation information
+#         'citation_name': citation.get('name', ''),
+#         'citation_authors': ', '.join(citation.get('authors', [])),
+#         'citation_year': citation.get('year', ''),
+#         'citation_organization': citation.get('organization', ''),
+#         'citation_doi': citation.get('doi', ''),
+#         'citation_url': citation.get('url', ''),
+
+#         # Processing status
+#         'upload_timestamp': pd.Timestamp.now(),
+#         'processed': processed,
+
+#         # Image information
+#         'images_in_doc': images_in_doc,
+#         'paper_image_urls': paper_image_urls,
+
+#         # Species information
+#         'species_id': uuid.uuid4().hex,
+#         'species_index': species_index,
+#         'species_name': species_name,
+#         'species_authors': species_authors,
+#         'species_year': species_year,
+#         'species_references': species_references,
+#         'formatted_species_name': formatted_species_name,
+#         'genus': genus,
+#         'species_magnification': species_magnification,
+#         'species_scale_bar_microns': species_scale_bar_microns,
+#         'species_note': species_note,
+
+#         # Source material information
+#         'figure_caption': figure_caption,
+#         'source_material_location': source_material_location,
+#         'source_material_coordinates': source_material_coordinates,
+#         'source_material_description': source_material_description,
+#         'source_material_received_from': source_material_received_from,
+#         'source_material_date_received': source_material_date_received,
+#         'source_material_note': source_material_note,
+
+#         # Cropped image, embeddings, bounding boxes and segmentation
+#         'cropped_image_url': "",
+#         'embeddings_256':  [],
+#         'embeddings_512':  [],
+#         'embeddings_1024': [],
+#         'embeddings_2048': [],
+#         'embeddings_4096': [],
+#         'bbox_top_left_bottom_right': "",
+#         'yolo_bbox': "",
+#         'segmentation': ""
+#     }
+
+#     # Add new row to DataFrame
+#     new_df = pd.DataFrame([new_row])
+#     for col in PROCESSED_FILES_PD.columns:
+#         new_df[col] = new_df[col].astype(PROCESSED_FILES_PD[col].dtype)
+#     PROCESSED_FILES_PD = pd.concat([PROCESSED_FILES_PD, new_df], ignore_index=True)
+
+#     try:
+#         # Save updated DataFrame to GCS (commented out as an example)
+#         pass
+#     except Exception as e:
+#         print(f"Error saving tracking data to GCS: {e}")
+
+#     # Return the required values
+#     return filename, citation, result, pdf_text_content, parsed_output
