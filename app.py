@@ -176,7 +176,8 @@ def update_parent_files_tracking(public_url):
     
     try:
         # Save updated DataFrame to GCS
-        save_tracker_csv(PARENT_FILES_PD, SESSION_ID, BUCKET_PAPER_TRACKER_CSV)
+        # save_tracker_csv(PARENT_FILES_PD, SESSION_ID, BUCKET_PAPER_TRACKER_CSV)
+        save_df_to_gcs(PARENT_FILES_PD, SESSION_ID, PAPERS_BUCKET)
 
     except Exception as e:
         print(f"Error saving tracking data to GCS: {e}")
