@@ -818,5 +818,43 @@ def extract_data_with_claude():
         return jsonify({'error': 'An error occurred while fetching the completion.'}), 500
 
 
+def fetch_and_process_data():
+    """Fetch data from the CSV URL and process it into the required format"""
+    url = "https://storage.googleapis.com/papers-diatoms-colossus/cvs/colossus.csv"
+    try:
+        # Read CSV directly from URL
+        df = pd.read_csv(url)
+        
+        # Process each row into the required format
+        processed_data = []
+        for _, result in df.iterrows():
+            new_row = {
+                '_id': uuid.uuid4().hex,
+                'name': result['original_species']['name'],
+                'author': result['original_species']['author'],
+                'reference_url': result['original_species']['reference_url'],
+                'synonyms': result.get('synonyms', []),
+                'search_date': datetime.now().strftime("%m/%d/%Y")
+            }
+            processed_data.append(new_row)
+        
+        return processed_data
+    except Exception as e:
+        print(f"Error fetching data: {e}")
+        return []
+
+@app.route('/colosus')
+def display_table():
+    """Route to display the auto-refreshing table"""
+    data = fetch_and_process_data()
+    return render_template('colosus.html', data=data)
+
+
+
+
+
+
+
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.getenv('PORT', 8080)))

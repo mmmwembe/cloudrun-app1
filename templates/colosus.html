@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="refresh" content="30">
+    <title>Diatom Species Data</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .table-wrapper {
+            overflow-x: auto;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-radius: 4px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #2196F3;
+            color: white;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .refresh-info {
+            text-align: center;
+            color: #666;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: white;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .synonyms {
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        a {
+            color: #2196F3;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        a:hover {
+            color: #0d47a1;
+            text-decoration: underline;
+        }
+        .loading {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 4px;
+            display: none;
+        }
+        .error-message {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            display: none;
+        }
+    </style>
+    <script>
+        // Show loading indicator when page is about to refresh
+        window.onbeforeunload = function() {
+            document.getElementById('loading').style.display = 'block';
+        };
+
+        // Function to format the synonyms array
+        function formatSynonyms(synonyms) {
+            if (!synonyms || synonyms.length === 0) return 'None';
+            return synonyms.join(', ');
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Diatom Species Database</h1>
+        <div id="error-message" class="error-message"></div>
+        <div id="loading" class="loading">Refreshing data...</div>
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Species Name</th>
+                        <th>Author</th>
+                        <th>Reference</th>
+                        <th>Synonyms</th>
+                        <th>Search Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in data %}
+                    <tr>
+                        <td>{{ row._id }}</td>
+                        <td>{{ row.name }}</td>
+                        <td>{{ row.author }}</td>
+                        <td>
+                            {% if row.reference_url %}
+                            <a href="{{ row.reference_url }}" target="_blank" rel="noopener noreferrer">View Reference</a>
+                            {% else %}
+                            N/A
+                            {% endif %}
+                        </td>
+                        <td class="synonyms" title="{{ row.synonyms|join(', ') }}">
+                            {{ row.synonyms|join(', ') or 'None' }}
+                        </td>
+                        <td>{{ row.search_date }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="refresh-info">
+            <p>Data automatically refreshes every 30 seconds.</p>
+            <p>Last updated: {{ data[0].search_date if data else 'N/A' }}</p>
+        </div>
+    </div>
+</body>
+</html>
