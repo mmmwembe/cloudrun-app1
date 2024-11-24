@@ -486,7 +486,8 @@ def process_files():
     source_material_note = parsed_output.get('source_material_note', '')
 
     # Load or initialize PROCESSED_FILES_PD
-    PROCESSED_FILES_PD = load_or_initialize_processed_files_df(session_id=SESSION_ID, bucket_name=PAPERS_PROCESSED_BUCKET)
+    public_url = f"https://storage.googleapis.com/{PAPERS_PROCESSED_BUCKET}/csv/{SESSION_ID}/{SESSION_ID}.csv"
+    PROCESSED_FILES_PD = initialize_or_load_processed_files_df2(public_url) 
 
     # Process each species in the parsed output
     new_rows = []
