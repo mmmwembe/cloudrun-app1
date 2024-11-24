@@ -113,31 +113,32 @@ PARENT_FILES_PD = initialize_paper_upload_tracker_df_from_gcp(session_id=SESSION
 # Update of PD is made with update_processed_files_df_tracking(public_url, citation, session_id, extracted_images_bucket_name)
 # Update of this df is performed in @app.route('/process_files/', methods=['POST']) route
 # Saving of this df to GCP is performed in route('/process_files/', methods=['POST']) route with save_df_to_gcs(PROCESSED_FILES_PD, PAPERS_PROCESSED_BUCKET, SESSION_ID) 
+global PROCESSED_FILES_PD
 PROCESSED_FILES_PD = load_or_initialize_processed_files_df(session_id=SESSION_ID,bucket_name=PAPERS_PROCESSED_BUCKET)
 
 
 
-global CHILD_FILES_PD
-CHILD_FILES_PD = pd.DataFrame(columns = [
-    # Child-specific fields
-    'child_pdf_file_url',
-    'has_images',
-    'num_of_images',
-    'page_number',
-    'image_urls_array',
+# global CHILD_FILES_PD
+# CHILD_FILES_PD = pd.DataFrame(columns = [
+#     # Child-specific fields
+#     'child_pdf_file_url',
+#     'has_images',
+#     'num_of_images',
+#     'page_number',
+#     'image_urls_array',
     
-    # Parent fields from PARENT_FILES_PD
-    'gcp_public_url',
-    'hash',
-    'original_filename',
-    'citation_name',
-    'citation_authors',
-    'citation_year',
-    'citation_organization',
-    'citation_doi',
-    'citation_url',
-    'upload_timestamp'
-])
+#     # Parent fields from PARENT_FILES_PD
+#     'gcp_public_url',
+#     'hash',
+#     'original_filename',
+#     'citation_name',
+#     'citation_authors',
+#     'citation_year',
+#     'citation_organization',
+#     'citation_doi',
+#     'citation_url',
+#     'upload_timestamp'
+# ])
 
 
 

@@ -6,7 +6,7 @@ import json
 import uuid
 from modules.pdf_image_and_metadata_handler import extract_images_and_metadata_from_pdf
 from modules.utils import extract_text_from_pdf
-from modules.llm_ops import llm_parsed_output_from_text, create_messages, llm_with_JSON_output
+from modules.llm_ops import llm_with_JSON_output
 
 # Load environment variables from .env file
 load_dotenv()
@@ -75,6 +75,7 @@ def load_or_initialize_processed_files_df(bucket_name: str, session_id: str) -> 
     Returns:
         pd.DataFrame: The DataFrame either loaded from the CSV or initialized with default columns.
     """
+    
     try:
         # Initialize GCS client
         client = get_storage_client()
@@ -92,7 +93,10 @@ def load_or_initialize_processed_files_df(bucket_name: str, session_id: str) -> 
             # If file exists, download it and load into DataFrame
             print(f"File found in GCS bucket. Loading CSV file from {blob_path}")
             # Download the file as a string and read it into a DataFrame
-            df = pd.read_csv(blob.download_as_text())
+            #df = pd.read_csv(blob.download_as_text())
+            public_url = f"https://storage.googleapis.com/{bucket_name}/csv/{session_id}/{session_id}.csv"
+            df = pd.read_csv(public_url)
+            
         else:
             # If file does not exist, initialize the DataFrame with default columns
             print(f"File not found in GCS bucket. Initializing new DataFrame.")
