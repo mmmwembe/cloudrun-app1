@@ -263,7 +263,7 @@ def update_processed_files_df_tracking(public_url, citation, session_id, extract
         print(f"Error saving tracking data to GCS: {e}")
 
     # Return the required values
-    return filename, citation, result, pdf_text_content, parsed_output
+    return filename, citation, result, pdf_text_content, parsed_output, PROCESSED_FILES_PD
 
 # filename, citation, result, pdf_text_content, parsed_output = update_processed_files_df_tracking(
 #     public_url,
