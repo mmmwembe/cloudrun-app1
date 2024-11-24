@@ -818,16 +818,13 @@ def extract_data_with_claude():
         return jsonify({'error': 'An error occurred while fetching the completion.'}), 500
 
 
-
-
-
 def fetch_and_process_data():
-    """Fetch data from the CSV URL and convert synonyms JSON to string"""
+    """Fetch data from the CSV URL and properly convert synonyms to string"""
     url = "https://storage.googleapis.com/papers-diatoms-colossus/cvs/colossus.csv"
     try:
         df = pd.read_csv(url)
-        # Convert the entire synonyms structure to a string
-        df['synonyms'] = df['synonyms'].astype(str)
+        # Convert the synonyms column data type to string without splitting characters
+        df['synonyms'] = df['synonyms'].str.join('')
         return df.to_dict('records')
     except Exception as e:
         print(f"Error fetching data: {e}")
