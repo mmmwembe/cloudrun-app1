@@ -369,7 +369,8 @@ def process_files():
     extracted_text = extract_text_from_pdf(current_file_public_url)
     extracted_text_str = str(extracted_text)
     # extracted_text = read_pdf_from_url(current_file_public_url)
-    llm_json_output = llm_parsed_output_from_text (extracted_text)
+    #llm_json_output = llm_parsed_output_from_text(extracted_text)
+    llm_json_output = llm_with_JSON_output(extracted_text)
     llm_json_output_string = json.dumps(llm_json_output)
     #llm_json_output_string ="This is a test"
     time.sleep(65)
