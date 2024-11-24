@@ -264,6 +264,39 @@ def save_file_to_bucket(local_file_path, filename):
         print(f"Error uploading file: {e}")
         return None
 
+def save_csv_to_bucket_v2(local_file_path, bucket_name, session_id):
+    """
+    Save a local CSV file to a GCP bucket in the format {bucket_name}/csv/{session_id}/{session_id}.csv.
+
+    Args:
+        local_file_path (str): The path to the local file to upload.
+        bucket_name (str): The name of the GCP bucket.
+        session_id (str): The session ID used to define the file structure.
+
+    Returns:
+        tuple: (blob_name, public_url) where blob_name is the path in the bucket and public_url is the public URL of the uploaded file.
+    """
+    try:
+        # Initialize the GCP storage client
+        client = get_storage_client()
+        bucket = client.bucket(bucket_name)
+
+        # Create the full path in the bucket
+        blob_name = f"csv/{session_id}/{session_id}.csv"
+        blob = bucket.blob(blob_name)
+
+        # Upload the file
+        blob.upload_from_filename(local_file_path)
+
+        # Generate the public URL
+        public_url = f"https://storage.googleapis.com/{bucket_name}/{blob_name}"
+
+        return public_url
+    except Exception as e:
+        print(f"Error uploading file to bucket '{bucket_name}': {e}")
+        return None, None
+
+
 def get_uploaded_files():
     try:
         client = get_storage_client()
@@ -447,6 +480,8 @@ def go_to_processfile():
 #     })
 
 
+import tempfile
+
 @app.route('/process_files/', methods=['POST'])
 def process_files():
     current_index = int(request.json.get('index', 0))
@@ -475,9 +510,7 @@ def process_files():
     source_material_note = parsed_output.get('source_material_note', '')
 
     # Load or initialize PROCESSED_FILES_PD
-    #PROCESSED_FILES_PD = load_or_initialize_processed_files_df(session_id=SESSION_ID, bucket_name=PAPERS_PROCESSED_BUCKET)
-    public_url = f"https://storage.googleapis.com/{PAPERS_PROCESSED_BUCKET}/csv/{SESSION_ID}/{SESSION_ID}.csv"
-    PROCESSED_FILES_PD = initialize_or_load_processed_files_df2(public_url) 
+    PROCESSED_FILES_PD = load_or_initialize_processed_files_df(session_id=SESSION_ID, bucket_name=PAPERS_PROCESSED_BUCKET)
 
     # Process each species in the parsed output
     new_rows = []
@@ -546,10 +579,16 @@ def process_files():
         new_df[col] = new_df[col].astype(PROCESSED_FILES_PD[col].dtype)
     PROCESSED_FILES_PD = pd.concat([PROCESSED_FILES_PD, new_df], ignore_index=True)
 
-    # Save updated PROCESSED_FILES_PD to GCS
-    processed_files_csv_url = save_df_to_gcs(PROCESSED_FILES_PD, PAPERS_PROCESSED_BUCKET, SESSION_ID)
+    # Save updated DataFrame as a temporary CSV file
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".csv") as temp_csv:
+        PROCESSED_FILES_PD.to_csv(temp_csv.name, index=False)
+        local_file_path = temp_csv.name  # Path to the temp CSV file
 
-    time.sleep(65)  # Adjust this delay as needed for rate limiting or other requirements
+    # Define the GCS bucket path
+    gcs_path = f"csv/{SESSION_ID}/{SESSION_ID}.csv"
+
+    # Upload the temp CSV to GCP bucket
+    public_url = save_csv_to_bucket_v2(local_file_path=local_file_path,bucket_name=PAPERS_PROCESSED_BUCKET,session_id=SESSION_ID)
 
     return jsonify({
         'done': False,
@@ -560,8 +599,126 @@ def process_files():
         'llm_json_output': json.dumps(llm_json_output),
         'result_string': json.dumps(result),
         'citation': json.dumps(citation),
-        'processed_files_csv_url': processed_files_csv_url,
+        'processed_files_csv_url': public_url,
     })
+
+
+
+# @app.route('/process_files/', methods=['POST'])
+# def process_files():
+#     current_index = int(request.json.get('index', 0))
+    
+#     if current_index >= len(PARENT_FILES_PD):
+#         return jsonify({'done': True})
+        
+#     current_file = PARENT_FILES_PD.iloc[current_index]
+#     public_url = current_file['gcp_public_url']
+#     filename = public_url.split('/')[-1]
+
+#     # Get citation and process PDF
+#     citation = get_default_citation()
+#     result = extract_images_and_metadata_from_pdf(public_url, SESSION_ID, BUCKET_EXTRACTED_IMAGES)
+#     pdf_text_content = extract_text_from_pdf(public_url)
+#     llm_json_output = llm_with_JSON_output(pdf_text_content)
+
+#     # Parse extracted LLM JSON output
+#     parsed_output = llm_json_output
+#     figure_caption = parsed_output.get('figure_caption', '')
+#     source_material_location = parsed_output.get('source_material_location', '')
+#     source_material_coordinates = parsed_output.get('source_material_coordinates', '')
+#     source_material_description = parsed_output.get('source_material_description', '')
+#     source_material_received_from = parsed_output.get('source_material_received_from', '')
+#     source_material_date_received = parsed_output.get('source_material_date_received', '')
+#     source_material_note = parsed_output.get('source_material_note', '')
+
+#     # Load or initialize PROCESSED_FILES_PD
+#     #PROCESSED_FILES_PD = load_or_initialize_processed_files_df(session_id=SESSION_ID, bucket_name=PAPERS_PROCESSED_BUCKET)
+#     public_url = f"https://storage.googleapis.com/{PAPERS_PROCESSED_BUCKET}/csv/{SESSION_ID}/{SESSION_ID}.csv"
+#     PROCESSED_FILES_PD = initialize_or_load_processed_files_df2(public_url) 
+
+#     # Process each species in the parsed output
+#     new_rows = []
+#     for species in parsed_output.get('diatom_species_array', []):
+#         # Extract species details
+#         species_index = species.get('species_index', '')
+#         species_name = species.get('species_name', '')
+#         species_authors = species.get('species_authors', [])
+#         species_year = species.get('species_year', '')
+#         species_references = species.get('species_references', [])
+#         formatted_species_name = species.get('formatted_species_name', '')
+#         genus = species.get('genus', '')
+#         species_magnification = species.get('species_magnification', '')
+#         species_scale_bar_microns = species.get('species_scale_bar_microns', '')
+#         species_note = species.get('species_note', '')
+
+#         # Create a new row for the species
+#         new_row = {
+#             'gcp_public_url': public_url,
+#             'original_filename': filename,
+#             'pdf_text_content': pdf_text_content,
+#             'file_256_hash': result.get('file_256_hash', ''),
+#             'citation_name': citation.get('name', ''),
+#             'citation_authors': ', '.join(citation.get('authors', [])),
+#             'citation_year': citation.get('year', ''),
+#             'citation_organization': citation.get('organization', ''),
+#             'citation_doi': citation.get('doi', ''),
+#             'citation_url': citation.get('url', ''),
+#             'upload_timestamp': pd.Timestamp.now(),
+#             'processed': True,
+#             'images_in_doc': result.get('images_in_doc', []),
+#             'paper_image_urls': result.get('paper_image_urls', []),
+#             'species_id': uuid.uuid4().hex,
+#             'species_index': species_index,
+#             'species_name': species_name,
+#             'species_authors': species_authors,
+#             'species_year': species_year,
+#             'species_references': species_references,
+#             'formatted_species_name': formatted_species_name,
+#             'genus': genus,
+#             'species_magnification': species_magnification,
+#             'species_scale_bar_microns': species_scale_bar_microns,
+#             'species_note': species_note,
+#             'figure_caption': figure_caption,
+#             'source_material_location': source_material_location,
+#             'source_material_coordinates': source_material_coordinates,
+#             'source_material_description': source_material_description,
+#             'source_material_received_from': source_material_received_from,
+#             'source_material_date_received': source_material_date_received,
+#             'source_material_note': source_material_note,
+#             'cropped_image_url': "",
+#             'embeddings_256': [],
+#             'embeddings_512': [],
+#             'embeddings_1024': [],
+#             'embeddings_2048': [],
+#             'embeddings_4096': [],
+#             'bbox_top_left_bottom_right': "",
+#             'yolo_bbox': "",
+#             'segmentation': ""
+#         }
+#         new_rows.append(new_row)
+
+#     # Append new rows to PROCESSED_FILES_PD
+#     new_df = pd.DataFrame(new_rows)
+#     for col in PROCESSED_FILES_PD.columns:
+#         new_df[col] = new_df[col].astype(PROCESSED_FILES_PD[col].dtype)
+#     PROCESSED_FILES_PD = pd.concat([PROCESSED_FILES_PD, new_df], ignore_index=True)
+
+#     # Save updated PROCESSED_FILES_PD to GCS
+#     processed_files_csv_url = save_df_to_gcs(PROCESSED_FILES_PD, PAPERS_PROCESSED_BUCKET, SESSION_ID)
+
+#     time.sleep(65)  # Adjust this delay as needed for rate limiting or other requirements
+
+#     return jsonify({
+#         'done': False,
+#         'gcp_public_url': public_url,
+#         'current_index': current_index,
+#         'total_files': len(PARENT_FILES_PD),
+#         'extracted_text': str(pdf_text_content),
+#         'llm_json_output': json.dumps(llm_json_output),
+#         'result_string': json.dumps(result),
+#         'citation': json.dumps(citation),
+#         'processed_files_csv_url': processed_files_csv_url,
+#     })
 
 
 
