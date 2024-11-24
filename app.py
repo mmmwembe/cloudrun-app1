@@ -9,12 +9,12 @@ import pandas as pd
 from modules.process_pdfs import process_pdf
 from modules.claude_ai import create_claude_prompt, encode_pdf_to_base64, create_messages, get_completion
 from modules.groq_llama import get_llama_paper_info
-from modules.gcp_ops import save_file_to_bucket, save_tracker_csv, initialize_tracker_df_from_gcp
+from modules.gcp_ops import save_file_to_bucket, save_tracker_csv, initialize_paper_upload_tracker_df_from_gcp
 # save_file_to_bucket(artifact_url, session_id, file_hash_num, bucket_name, subdir="papers"
 from datetime import datetime
 from modules.llm_ops import llm_parsed_output_from_text, create_messages, llm_with_JSON_output
 from modules.pdf_image_and_metadata_handler import extract_images_and_metadata_from_pdf
-from modules.pandas_and_gcp import save_df_to_gcs, load_or_initialize_df
+from modules.pandas_and_gcp import save_df_to_gcs, load_or_initialize_processed_files_df
 import requests
 from langchain_community.document_loaders import PyPDFLoader
 import tempfile
@@ -39,6 +39,7 @@ BUCKET_PAPER_TRACKER_CSV = 'papers-extracted-pages-csv-bucket-mmm'
 SESSION_ID = 'eb9db0ca54e94dbc82cffdab497cde13'
 FILE_HASH_NUM = '8c583173bc904ce596d5de69ac432acb'
 PAPERS_BUCKET ='papers-diatoms'
+PAPERS_PROCESSED_BUCKET ='papers-diatoms-processed'
 
 ALLOWED_EXTENSIONS = {'pdf'}
 
@@ -102,7 +103,7 @@ os.makedirs(TEMP_EXTRACTED_IMAGES_DIR, exist_ok=True)
 
 # PARENT_FILES_PD = initialize_tracker_df_from_gcp(session_id=SESSION_ID,bucket_name=BUCKET_PAPER_TRACKER_CSV)
 
-PARENT_FILES_PD = initialize_tracker_df_from_gcp(session_id=SESSION_ID,bucket_name=PAPERS_BUCKET)
+PARENT_FILES_PD = initialize_paper_upload_tracker_df_from_gcp(session_id=SESSION_ID,bucket_name=BUCKET_PAPER_TRACKER_CSV)
 
 global CHILD_FILES_PD
 CHILD_FILES_PD = pd.DataFrame(columns = [
@@ -140,7 +141,7 @@ def get_default_citation():
 }
 
 
-def update_parent_files_tracking(public_url):
+def update_uploaded_files_tracking(public_url):
     """
     Update the PARENT_FILES_PD DataFrame with file information and citation details.
     Extracts filename from the public_url.
@@ -176,8 +177,8 @@ def update_parent_files_tracking(public_url):
     
     try:
         # Save updated DataFrame to GCS
-        # save_tracker_csv(PARENT_FILES_PD, SESSION_ID, BUCKET_PAPER_TRACKER_CSV)
-        save_df_to_gcs(PARENT_FILES_PD, SESSION_ID, PAPERS_BUCKET)
+        save_tracker_csv(PARENT_FILES_PD, SESSION_ID, BUCKET_PAPER_TRACKER_CSV)
+        # save_df_to_gcs(PARENT_FILES_PD, SESSION_ID, PAPERS_BUCKET)
 
     except Exception as e:
         print(f"Error saving tracking data to GCS: {e}")
@@ -300,7 +301,7 @@ def upload_file():
                     #file_public_url = save_file_to_bucket(temp_path, SESSION_ID, FILE_HASH_NUM, BUCKET_NAME, subdir="papers")
                     
                     # Update PARENT_FILES_PD
-                    update_parent_files_tracking(public_url)
+                    update_uploaded_files_tracking(public_url)
                     
                     os.remove(temp_path)
                     
@@ -332,7 +333,7 @@ def go_to_processfile():
     
     # num_rows = len(PARENT_FILES_PD)
     # Get DataFrame from GCS
-    df = initialize_tracker_df_from_gcp(
+    df = initialize_paper_upload_tracker_df_from_gcp(
         session_id=SESSION_ID,
         bucket_name=BUCKET_PAPER_TRACKER_CSV
     )

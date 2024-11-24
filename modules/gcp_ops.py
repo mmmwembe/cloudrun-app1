@@ -91,7 +91,7 @@ def save_tracker_csv(df, session_id, bucket_name):
             os.remove(temp_csv_path)
         return None
 
-def initialize_tracker_df_from_gcp(session_id, bucket_name):
+def initialize_paper_upload_tracker_df_from_gcp(session_id, bucket_name):
     """
     Initialize a pandas DataFrame from a CSV file stored in GCS using session_id.
     Reads directly from GCS URL.
@@ -124,7 +124,8 @@ def initialize_tracker_df_from_gcp(session_id, bucket_name):
             'citation_organization',
             'citation_doi',
             'citation_url',
-            'upload_timestamp'
+            'upload_timestamp',
+            'processed',
         ])
  
 # def initialize_tracker_df_from_gcp(session_id, bucket_name):

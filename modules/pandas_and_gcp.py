@@ -63,7 +63,7 @@ def save_df_to_gcs(df: pd.DataFrame, bucket_name: str, session_id: str) -> str:
         print(f"Error saving DataFrame to GCS: {e}")
         return None
 
-def load_or_initialize_df(bucket_name: str, session_id: str) -> pd.DataFrame:
+def load_or_initialize_processed_files_df(bucket_name: str, session_id: str) -> pd.DataFrame:
     """
     Loads a DataFrame from a CSV file stored in a GCS bucket or initializes a new one
     if the file does not exist.
