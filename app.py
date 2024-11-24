@@ -12,7 +12,8 @@ from modules.groq_llama import get_llama_paper_info
 from modules.gcp_ops import save_file_to_bucket, save_tracker_csv, initialize_tracker_df_from_gcp
 # save_file_to_bucket(artifact_url, session_id, file_hash_num, bucket_name, subdir="papers"
 from datetime import datetime
-from modules.llm_ops import llm_parsed_output_from_text, create_messages, llm_with_JSON_output, extract_images_and_metadata_from_pdf
+from modules.llm_ops import llm_parsed_output_from_text, create_messages, llm_with_JSON_output
+from modules.pdf_image_and_metadata_handler import extract_images_and_metadata_from_pdf
 import requests
 from langchain_community.document_loaders import PyPDFLoader
 import tempfile
@@ -349,8 +350,17 @@ def process_files():
     
     current_file_public_url = current_file['gcp_public_url']
     
-    result = extract_images_and_metadata_from_pdf(current_file_public_url,BUCKET_EXTRACTED_IMAGES)
-    result_string = json.dumps(result)
+        # Extract filename from the public_url
+    filename = current_file_public_url.split('/')[-1]
+
+    # Get default citation info
+    citation = get_default_citation()
+    citation_string = json.dumps(citation, indent=4)
+    
+
+    result = extract_images_and_metadata_from_pdf(current_file_public_url, SESSION_ID, BUCKET_EXTRACTED_IMAGES)
+    # Convert the result dictionary to a JSON string
+    result_string = json.dumps(result, indent=4)
     
     # extracted_text = encode_pdf_to_base64(current_file_public_url)
     extracted_text = extract_text_from_pdf(current_file_public_url)
@@ -370,6 +380,7 @@ def process_files():
         'extracted_text': extracted_text_str,
         'llm_json_output': llm_json_output_string,
         'result_string': result_string,
+        'citation': citation_string,
     })
 
 
