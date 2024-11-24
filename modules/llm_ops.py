@@ -444,5 +444,128 @@ def read_pdf_from_url(pdf_url):
         print(f"Error reading PDF: {e}")
         return None
 
+def extract_images_and_metadata_from_pdf(pdf_url: str, bucket_name: str) -> dict:
+    """
+    Extracts images and metadata from a PDF file.
 
+    Args:
+    pdf_url (str): The URL of the PDF file.
 
+    Returns:
+    dict: A dictionary containing the extracted images, metadata, and additional details.
+
+    Raises:
+    Exception: If an error occurs during processing.
+
+    Custom Functions Used:
+    - get_file_hash: Calculates the hash of a file.
+    - upload_to_gcs: Uploads a file to Google Cloud Storage and returns the URL.
+
+    Note: This function requires the following modules: requests, fitz, os, tempfile.
+    """
+    try:
+        # Convert GCS URL to direct download URL
+        pdf_url = pdf_url.replace("storage.cloud.google.com", "storage.googleapis.com")
+
+        # Create temporary directory for extracted images
+        tmp_dir = "tmp_extracted_images"
+        os.makedirs(tmp_dir, exist_ok=True)
+
+        # Download PDF content
+        response = requests.get(pdf_url)
+        response.raise_for_status()
+        pdf_content = response.content
+
+        # Calculate file hash
+        file_256_hash = get_file_hash(pdf_content)
+
+        # Create temporary PDF file
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as temp_file:
+            temp_file.write(pdf_content)
+            temp_path = temp_file.name
+
+        # Open PDF with PyMuPDF
+        pdf_document = fitz.open(temp_path)
+        total_pages = len(pdf_document)
+
+        # Initialize result structure
+        result = {
+            "file_256_hash": file_256_hash,
+            "images_in_doc": [],
+            "paper_image_urls": [],
+            "total_images": 0,  # Total number of images across all pages
+            "page_details": []  # Detailed information about pages with images
+        }
+
+        # Process each page
+        for page_num in range(total_pages):
+            page = pdf_document[page_num]
+            image_list = page.get_images()
+
+            page_info = {
+                "page_index": page_num,
+                "total_pages": total_pages,
+                "has_images": len(image_list) > 0,
+                "num_images": len(image_list),
+                "image_urls": []
+            }
+
+            # Extract images if they exist
+            if image_list:
+                for img_idx, img in enumerate(image_list, 1):
+                    try:
+                        # Get image data
+                        xref = img[0]
+                        base_image = pdf_document.extract_image(xref)
+                        image_bytes = base_image["image"]
+
+                        # Create filename
+                        image_filename = f"extracted_img_{page_num + 1}_of_{img_idx}.jpeg"
+                        local_path = os.path.join(tmp_dir, image_filename)
+
+                        # Save locally
+                        with open(local_path, "wb") as image_file:
+                            image_file.write(image_bytes)
+
+                        # Upload to GCS and get URL
+                        image_url = upload_to_gcs(
+                            image_content=image_bytes,
+                            filename=image_filename,
+                            file_hash=file_256_hash,
+                            bucket_name=bucket_name # BUCKET_EXTRACTED_IMAGES
+                        )
+
+                        if image_url:
+                            page_info["image_urls"].append(image_url)
+                            result["paper_image_urls"].append(image_url)  # Add to consolidated list
+
+                    except Exception as e:
+                        print(f"Error processing image {img_idx} on page {page_num + 1}: {str(e)}")
+
+            # Update total_images count
+            result["total_images"] += page_info["num_images"]
+
+            # Append detailed page info if images are present
+            if page_info["has_images"]:
+                result["page_details"].append({
+                    "page_index": page_num,
+                    "num_images": page_info["num_images"],
+                    "image_urls": page_info["image_urls"]
+                })
+
+            result["images_in_doc"].append(page_info)
+
+        # Cleanup
+        pdf_document.close()
+        os.unlink(temp_path)
+
+        # Clean up temporary directory
+        for file in os.listdir(tmp_dir):
+            os.remove(os.path.join(tmp_dir, file))
+        os.rmdir(tmp_dir)
+
+        return result
+
+    except Exception as e:
+        print(f"Error processing PDF: {str(e)}")
+        return None

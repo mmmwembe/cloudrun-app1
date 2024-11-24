@@ -195,9 +195,11 @@
         <div class="border-b-2 border-gray-300 my-4"></div>
         
         <div id="extracted_text" class="text-center"></div>
-        <div class="border-b-2 border-gray-300 my-4"></div>
-        
+        <div class="border-b-2 border-gray-300 my-4"></div>     
         <div id="llm_json_output" class="text-center"></div>
+
+        <div class="border-b-2 border-gray-300 my-4"></div>     
+        <div id="result_string" class="text-center"></div>
     </div>
 
     <script>
@@ -212,6 +214,7 @@
 
         const extracted_text = document.getElementById('extracted_text');
         const llm_json_output = document.getElementById('llm_json_output');
+        const result_string = document.getElementById('result_string');
 
         let currentIndex = 0;
         
@@ -243,6 +246,7 @@
                 
                 extracted_text.textContent = data.extracted_text;
                 llm_json_output.textContent = data.llm_json_output;
+                result_string.textContent = data.result_string;
 
                 // Increment counter
                 currentIndex++;
