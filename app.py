@@ -16,7 +16,7 @@ from modules.llm_ops import llm_parsed_output_from_text, create_messages, llm_wi
 from modules.pdf_image_and_metadata_handler import extract_images_and_metadata_from_pdf
 from modules.pandas_and_gcp import save_df_to_gcs, load_or_initialize_processed_files_df, update_processed_files_df_tracking
 import requests
-from langchain_community.document_loaders import PyPDFLoader
+# from langchain_community.document_loaders import PyPDFLoader
 import tempfile
 from modules.utils import extract_text_from_pdf
 import time
@@ -371,26 +371,23 @@ def process_files():
         # Extract filename from the public_url
     filename = public_url.split('/')[-1]
 
-    # Get default citation info
+    # Get Info
     citation = get_default_citation()
-    # citation_string = json.dumps(citation, indent=4)
-    
-
     result = extract_images_and_metadata_from_pdf(public_url, SESSION_ID, BUCKET_EXTRACTED_IMAGES)
-    result_string = json.dumps(result, indent=4)
-    
     pdf_text_content= extract_text_from_pdf(public_url)
-    extracted_text_str = str(pdf_text_content)
-    
     llm_json_output = llm_with_JSON_output(pdf_text_content)
-    llm_json_output_string = json.dumps(llm_json_output)
+    
+    
+    citation_string = json.dumps(citation, indent=4) 
+    result_string = json.dumps(result, indent=4)
+    extracted_text_str = str(pdf_text_content)
+    llm_json_output_string = json.dumps(llm_json_output) 
+    
+    PROCESSED_FILES_PD = load_or_initialize_processed_files_df(session_id=SESSION_ID,bucket_name=PAPERS_PROCESSED_BUCKET)
     
     # This updates PROCESSED_FILES_PD
     # filename, citation, result, pdf_text_content, llm_json_output, PROCESSED_FILES_PD = update_processed_files_df_tracking(public_url, citation, SESSION_ID, BUCKET_EXTRACTED_IMAGES,PROCESSED_FILES_PD)
-    citation_string = json.dumps(citation, indent=4)
-    result_string = json.dumps(result, indent=4)
-    extracted_text_str = str(pdf_text_content)
-    llm_json_output_string = json.dumps(llm_json_output)
+
     
     # Save PD
     processed_files_csv_url = f"https://storage.googleapis.com/{PAPERS_PROCESSED_BUCKET}/csv/{SESSION_ID}/{SESSION_ID}.csv"

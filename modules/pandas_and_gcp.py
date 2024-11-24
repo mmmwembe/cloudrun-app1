@@ -7,6 +7,13 @@ import uuid
 from modules.pdf_image_and_metadata_handler import extract_images_and_metadata_from_pdf
 from modules.utils import extract_text_from_pdf
 from modules.llm_ops import llm_with_JSON_output
+import logging
+import requests
+
+# Optional: Setting up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 # Load environment variables from .env file
 load_dotenv()
@@ -78,7 +85,7 @@ def load_or_initialize_processed_files_df(bucket_name: str, session_id: str) -> 
     
     try:
         # Initialize GCS client
-        client = get_storage_client()
+        client = storage.Client()
 
         # Construct the blob path for the CSV file in the bucket
         csv_filename = f"{session_id}.csv"
@@ -91,48 +98,44 @@ def load_or_initialize_processed_files_df(bucket_name: str, session_id: str) -> 
         # Check if the file exists
         if blob.exists():
             # If file exists, download it and load into DataFrame
-            print(f"File found in GCS bucket. Loading CSV file from {blob_path}")
-            # Download the file as a string and read it into a DataFrame
-            #df = pd.read_csv(blob.download_as_text())
+            logger.info(f"File found in GCS bucket. Loading CSV file from {blob_path}")
             public_url = f"https://storage.googleapis.com/{bucket_name}/csv/{session_id}/{session_id}.csv"
-            df = pd.read_csv(public_url)
+            response = requests.get(public_url)
+            df = pd.read_csv(pd.compat.StringIO(response.text))
             
         else:
             # If file does not exist, initialize the DataFrame with default columns
-            print(f"File not found in GCS bucket. Initializing new DataFrame.")
-            df = pd.DataFrame(columns=[
-                'gcp_public_url', 'original_filename', 'pdf_text_content', 'file_256_hash',
-                'citation_name', 'citation_authors', 'citation_year', 'citation_organization', 'citation_doi',
-                'citation_url', 'upload_timestamp', 'processed', 'images_in_doc', 'paper_image_urls',
-                'species_id', 'species_index', 'species_name', 'species_authors', 'species_year',
-                'species_references', 'formatted_species_name', 'genus', 'species_magnification',
-                'species_scale_bar_microns', 'species_note', 'figure_caption', 'source_material_location',
-                'source_material_coordinates', 'source_material_description', 'source_material_received_from',
-                'source_material_date_received', 'source_material_note', 'cropped_image_url', 'embeddings_256',
-                'embeddings_512', 'embeddings_1024', 'embeddings_2048', 'embeddings_4096', 
-                'bbox_top_left_bottom_right', 'yolo_bbox', 'segmentation'
-            ]).astype({
-                'gcp_public_url': 'str', 'original_filename': 'str', 'pdf_text_content': 'str',
-                'file_256_hash': 'str', 'citation_name': 'str', 'citation_authors': 'str',
-                'citation_year': 'str', 'citation_organization': 'str', 'citation_doi': 'str',
-                'citation_url': 'str', 'upload_timestamp': 'datetime64[ns]', 'processed': 'bool',
-                'images_in_doc': 'object', 'paper_image_urls': 'object', 'species_id': 'str',
-                'species_index': 'str', 'species_name': 'str', 'species_authors': 'object',
-                'species_year': 'str', 'species_references': 'object', 'formatted_species_name': 'str',
-                'genus': 'str', 'species_magnification': 'str', 'species_scale_bar_microns': 'str',
-                'species_note': 'str', 'figure_caption': 'str', 'source_material_location': 'str',
-                'source_material_coordinates': 'str', 'source_material_description': 'str',
-                'source_material_received_from': 'str', 'source_material_date_received': 'str',
-                'source_material_note': 'str', 'cropped_image_url': 'str', 'embeddings_256': 'object',
-                'embeddings_512': 'object', 'embeddings_1024': 'object', 'embeddings_2048': 'object',
-                'embeddings_4096': 'object', 'bbox_top_left_bottom_right': 'str', 'yolo_bbox': 'str',
-                'segmentation': 'str'
-            })
+            logger.info(f"File not found in GCS bucket. Initializing new DataFrame.")
+            columns = [
+                'gcp_public_url', 'original_filename', 'pdf_text_content', 'file_256_hash', 
+                'citation_name', 'citation_authors', 'citation_year', 'citation_organization', 'citation_doi', 
+                'citation_url', 'upload_timestamp', 'processed', 'images_in_doc', 'paper_image_urls', 'species_id',
+                'species_index', 'species_name', 'species_authors', 'species_year', 'species_references', 
+                'formatted_species_name', 'genus', 'species_magnification', 'species_scale_bar_microns', 
+                'species_note', 'figure_caption', 'source_material_location', 'source_material_coordinates', 
+                'source_material_description', 'source_material_received_from', 'source_material_date_received', 
+                'source_material_note', 'cropped_image_url', 'embeddings_256', 'embeddings_512', 'embeddings_1024', 
+                'embeddings_2048', 'embeddings_4096', 'bbox_top_left_bottom_right', 'yolo_bbox', 'segmentation'
+            ]
+            dtypes = {
+                'gcp_public_url': 'str', 'original_filename': 'str', 'pdf_text_content': 'str', 'file_256_hash': 'str', 
+                'citation_name': 'str', 'citation_authors': 'str', 'citation_year': 'str', 'citation_organization': 'str', 
+                'citation_doi': 'str', 'citation_url': 'str', 'upload_timestamp': 'datetime64[ns]', 'processed': 'bool', 
+                'images_in_doc': 'object', 'paper_image_urls': 'object', 'species_id': 'str', 'species_index': 'str', 
+                'species_name': 'str', 'species_authors': 'object', 'species_year': 'str', 'species_references': 'object', 
+                'formatted_species_name': 'str', 'genus': 'str', 'species_magnification': 'str', 'species_scale_bar_microns': 'str', 
+                'species_note': 'str', 'figure_caption': 'str', 'source_material_location': 'str', 'source_material_coordinates': 'str', 
+                'source_material_description': 'str', 'source_material_received_from': 'str', 'source_material_date_received': 'str', 
+                'source_material_note': 'str', 'cropped_image_url': 'str', 'embeddings_256': 'object', 'embeddings_512': 'object', 
+                'embeddings_1024': 'object', 'embeddings_2048': 'object', 'embeddings_4096': 'object', 'bbox_top_left_bottom_right': 'str', 
+                'yolo_bbox': 'str', 'segmentation': 'str'
+            }
+            df = pd.DataFrame(columns=columns).astype(dtypes)
         
         return df
 
     except Exception as e:
-        print(f"Error loading or initializing DataFrame: {e}")
+        logger.error(f"Error loading or initializing DataFrame: {e}")
         return None
 
 
@@ -268,6 +271,9 @@ def update_processed_files_df_tracking(public_url, citation, session_id, extract
 
     # Return the required values
     return filename, citation, result, pdf_text_content, parsed_output, PROCESSED_FILES_PD
+
+
+
 
 # filename, citation, result, pdf_text_content, parsed_output = update_processed_files_df_tracking(
 #     public_url,
