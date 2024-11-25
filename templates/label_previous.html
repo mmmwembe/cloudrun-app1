@@ -31,7 +31,7 @@
         /* Right Sidebar Styles */
         .sidebar-right {
             height: 100%;
-            width: 375px;
+            width: 375px; /* 1.5 times wider than left sidebar */
             position: fixed;
             top: 0;
             right: 0;
@@ -76,7 +76,7 @@
 
         .content {
             margin-left: 250px;
-            margin-right: 375px;
+            margin-right: 375px; /* Match the right sidebar width */
             padding: 20px;
             text-align: center;
             min-height: 100vh;
@@ -127,9 +127,9 @@
     <div class="sidebar-right">
         <div class="sidebar-title">Labels</div>
         <ul class="species-selector" id="speciesSelector">
-            {% for diatom in diatoms %}
-            <li class="species-item" data-species="{{ diatom.species }}" data-label="{{ diatom.label[0] }}">
-                {{ diatom.label[0] }}
+            {% for index, species in diatoms %}
+            <li class="species-item" data-species="{{ species }}" data-index="{{ index }}">
+                {{ index }} {{ species }}
             </li>
             {% endfor %}
         </ul>
@@ -146,9 +146,10 @@
                 // Add selected class to clicked item
                 this.classList.add('selected');
                 
-                // Update the displayed species label
-                const label = this.dataset.label;
-                document.getElementById('selectedSpecies').textContent = label;
+                // Update the displayed species name with index
+                const speciesName = this.dataset.species;
+                const index = this.dataset.index;
+                document.getElementById('selectedSpecies').textContent = `${index} ${speciesName}`;
             });
         });
     </script>

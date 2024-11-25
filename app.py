@@ -915,34 +915,66 @@ def display_table():
 
 
 # Define the diatoms array
+# azores_2_diatoms = [
+#     [39, "Amphora_obtusa_var_oceanica"],
+#     [40, "Amphora_obtusa"],
+#     [41, "Amphora_obtusa"],
+#     [42, "Amphora_obtusa"],
+#     [43, "Halamphora_cymbifera"],
+#     [44, "Amphora_bistriata"],
+#     [45, "Amphora_praelata"],
+#     [46, "Amphora_spectabilis"],
+#     [47, "Amphora_ocellata"],
+#     [48, "Amphora_crassa"],
+#     [49, "Amphora_crassa"],
+#     [50, "Amphora_crassa"],
+#     [51, "Diploneis_mirabilis"],
+#     [52, "Lyrella_impercepta"],
+#     [53, "Amphora_cingulata"],
+#     [54, "Amphora_cingulata"],
+#     [55, "Amphora_cingulata"],
+#     [56, "Amphora_sp_indet"],
+#     [57, "Parlibellus_delognei"],
+#     [58, "Parlibellus_delognei"],
+#     [59, "Navicula_digitoradiata"],
+#     [60, "Navicula_palpebralis"],
+#     [61, "Navicula_palpebralis"],
+#     [62, "Diploneis_papula"],
+#     [63, "Navicula_applicita"],
+#     [64, "Navicula_applicita"]
+# ]
+
+
 azores_2_diatoms = [
-    [39, "Amphora_obtusa_var_oceanica"],
-    [40, "Amphora_obtusa"],
-    [41, "Amphora_obtusa"],
-    [42, "Amphora_obtusa"],
-    [43, "Halamphora_cymbifera"],
-    [44, "Amphora_bistriata"],
-    [45, "Amphora_praelata"],
-    [46, "Amphora_spectabilis"],
-    [47, "Amphora_ocellata"],
-    [48, "Amphora_crassa"],
-    [49, "Amphora_crassa"],
-    [50, "Amphora_crassa"],
-    [51, "Diploneis_mirabilis"],
-    [52, "Lyrella_impercepta"],
-    [53, "Amphora_cingulata"],
-    [54, "Amphora_cingulata"],
-    [55, "Amphora_cingulata"],
-    [56, "Amphora_sp_indet"],
-    [57, "Parlibellus_delognei"],
-    [58, "Parlibellus_delognei"],
-    [59, "Navicula_digitoradiata"],
-    [60, "Navicula_palpebralis"],
-    [61, "Navicula_palpebralis"],
-    [62, "Diploneis_papula"],
-    [63, "Navicula_applicita"],
-    [64, "Navicula_applicita"]
+    {"label": ["39 Amphora_obtusa_var_oceanica"], "species": "Amphora_obtusa_var_oceanica", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+    {"label": ["40 Amphora_obtusa"], "species": "Amphora_obtusa", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+    {"label": ["41 Amphora_obtusa"], "species": "Amphora_obtusa", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+    {"label": ["42 Amphora_obtusa"], "species": "Amphora_obtusa", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+    {"label": ["43 Halamphora_cymbifera"], "species": "Halamphora_cymbifera", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+    {"label": ["44 Amphora_bistriata"], "species": "Amphora_bistriata", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+    {"label": ["45 Amphora_praelata"], "species": "Amphora_praelata", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+    {"label": ["46 Amphora_spectabilis"], "species": "Amphora_spectabilis", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+    {"label": ["47 Amphora_ocellata"], "species": "Amphora_ocellata", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+    {"label": ["48 Amphora_crassa"], "species": "Amphora_crassa", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+    {"label": ["49 Amphora_crassa"], "species": "Amphora_crassa", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+    {"label": ["50 Amphora_crassa"], "species": "Amphora_crassa", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+    {"label": ["51 Diploneis_mirabilis"], "species": "Diploneis_mirabilis", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+    {"label": ["52 Lyrella_impercepta"], "species": "Lyrella_impercepta", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+    {"label": ["53 Amphora_cingulata"], "species": "Amphora_cingulata", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+    {"label": ["54 Amphora_cingulata"], "species": "Amphora_cingulata", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+    {"label": ["55 Amphora_cingulata"], "species": "Amphora_cingulata", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+    {"label": ["56 Amphora_sp_indet"], "species": "Amphora_sp_indet", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+    {"label": ["57 Parlibellus_delognei"], "species": "Parlibellus_delognei", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+    {"label": ["58 Parlibellus_delognei"], "species": "Parlibellus_delognei", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+    {"label": ["59 Navicula_digitoradiata"], "species": "Navicula_digitoradiata", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+    {"label": ["60 Navicula_palpebralis"], "species": "Navicula_palpebralis", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+    {"label": ["61 Navicula_palpebralis"], "species": "Navicula_palpebralis", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+    {"label": ["62 Diploneis_papula"], "species": "Diploneis_papula", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+    {"label": ["63 Navicula_applicita"], "species": "Navicula_applicita", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+    {"label": ["64 Navicula_applicita"], "species": "Navicula_applicita", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''}
 ]
+
+
 
 @app.route('/label')
 def label():
