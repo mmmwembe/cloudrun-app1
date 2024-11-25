@@ -484,30 +484,30 @@ def process_files():
         pdf_text_content = extract_text_from_pdf(public_url)
         llm_json_output = llm_with_JSON_output(pdf_text_content)
 
-        # Validate arguments before proceeding
-        if not validate_update_arguments(
-            result=result,
-            citation=citation,
-            llm_json_output=llm_json_output,
-            public_url=public_url,
-            filename=filename,
-            pdf_text_content=pdf_text_content
-        ):
-            return jsonify({"error": "Invalid input"}), 400
+        # # Validate arguments before proceeding
+        # if not validate_update_arguments(
+        #     result=result,
+        #     citation=citation,
+        #     llm_json_output=llm_json_output,
+        #     public_url=public_url,
+        #     filename=filename,
+        #     pdf_text_content=pdf_text_content
+        # ):
+        #     return jsonify({"error": "Invalid input"}), 400
 
-        # Update the DataFrame
-        update_process_files_pd(result, citation, llm_json_output, public_url, filename, pdf_text_content)
+        # # Update the DataFrame
+        # update_process_files_pd(result, citation, llm_json_output, public_url, filename, pdf_text_content)
 
-        # Save the DataFrame to a local file (before calling the save to bucket method)
-        local_file_path = os.path.join('static', 'csv', f'{SESSION_ID}.csv')  # Use session_id for the file name
-        # Ensure the directory exists
-        os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
+        # # Save the DataFrame to a local file (before calling the save to bucket method)
+        # local_file_path = os.path.join('static', 'csv', f'{SESSION_ID}.csv')  # Use session_id for the file name
+        # # Ensure the directory exists
+        # os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
 
-        # Save the DataFrame locally to the file path
-        PROCESS_FILES_PD.to_csv(local_file_path, index=False)
+        # # Save the DataFrame locally to the file path
+        # PROCESS_FILES_PD.to_csv(local_file_path, index=False)
 
-        # Upload the CSV file to the bucket and get the public URL
-        processed_files_csv_url = save_csv_to_bucket_v2(local_file_path=local_file_path, bucket_name=PAPERS_PROCESSED_BUCKET, session_id=SESSION_ID)
+        # # Upload the CSV file to the bucket and get the public URL
+        # processed_files_csv_url = save_csv_to_bucket_v2(local_file_path=local_file_path, bucket_name=PAPERS_PROCESSED_BUCKET, session_id=SESSION_ID)
 
     except Exception as e:
         # Log the error (can be replaced with a logging solution)
