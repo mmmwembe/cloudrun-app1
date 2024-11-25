@@ -483,6 +483,7 @@ def process_files():
         result = extract_images_and_metadata_from_pdf(public_url, SESSION_ID, BUCKET_EXTRACTED_IMAGES)
         pdf_text_content = extract_text_from_pdf(public_url)
         llm_json_output = llm_with_JSON_output(pdf_text_content)
+        processed_files_csv_url =''
 
         # # Validate arguments before proceeding
         # if not validate_update_arguments(
