@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diatom Labeling</title>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const DiatomLabeler = () => {
+            const [diatoms, setDiatoms] = React.useState([]);
+            const [selectedDiatom, setSelectedDiatom] = React.useState(null);
+            const [isDrawing, setIsDrawing] = React.useState(false);
+            const [startPoint, setStartPoint] = React.useState({ x: 0, y: 0 });
+            const [currentBox, setCurrentBox] = React.useState(null);
+            
+            const canvasRef = React.useRef(null);
+            const imageRef = React.useRef(null);
+            const containerRef = React.useRef(null);
+
+            // Fetch initial diatoms data
+            React.useEffect(() => {
+                fetch('/api/diatoms')
+                    .then(response => response.json())
+                    .then(data => setDiatoms(data))
+                    .catch(error => console.error('Error fetching diatoms:', error));
+            }, []);
+
+            React.useEffect(() => {
+                const canvas = canvasRef.current;
+                const ctx = canvas.getContext('2d');
+                
+                // Clear canvas and redraw
+                const redrawCanvas = () => {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    
+                    // Draw existing bbox if available
+                    if (selectedDiatom && selectedDiatom.bbox) {
+                        const [x1, y1, x2, y2] = selectedDiatom.bbox.split(',').map(Number);
+                        ctx.strokeStyle = '#2ecc71';
+                        ctx.lineWidth = 3;
+                        ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+                    }
+                    
+                    // Draw current box if drawing
+                    if (currentBox) {
+                        ctx.strokeStyle = '#2ecc71';
+                        ctx.lineWidth = 3;
+                        ctx.strokeRect(
+                            currentBox.x,
+                            currentBox.y,
+                            currentBox.width,
+                            currentBox.height
+                        );
+                    }
+                };
+
+                redrawCanvas();
+            }, [selectedDiatom, currentBox]);
+
+            // Function to update bbox on the server
+            const updateDiatomBBox = async (updatedDiatom) => {
+                try {
+                    const response = await fetch('/label', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(updatedDiatom)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to update bbox');
+                    }
+                } catch (error) {
+                    console.error('Error updating bbox:', error);
+                }
+            };
+
+            const handleImageLoad = () => {
+                const canvas = canvasRef.current;
+                const container = containerRef.current;
+                canvas.width = container.offsetWidth;
+                canvas.height = container.offsetHeight;
+            };
+
+            const handleMouseDown = (e) => {
+                if (!selectedDiatom) return;
+                
+                const rect = canvasRef.current.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                setIsDrawing(true);
+                setStartPoint({ x, y });
+            };
+
+            const handleMouseMove = (e) => {
+                if (!isDrawing) return;
+                
+                const rect = canvasRef.current.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                setCurrentBox({
+                    x: Math.min(x, startPoint.x),
+                    y: Math.min(y, startPoint.y),
+                    width: Math.abs(x - startPoint.x),
+                    height: Math.abs(y - startPoint.y)
+                });
+            };
+
+            const handleMouseUp = () => {
+                if (!isDrawing) return;
+                
+                setIsDrawing(false);
+                if (currentBox) {
+                    const bbox = `${currentBox.x},${currentBox.y},${currentBox.x + currentBox.width},${currentBox.y + currentBox.height}`;
+                    
+                    // Create updated diatom object
+                    const updatedDiatom = { ...selectedDiatom, bbox };
+                    
+                    // Update local state
+                    setDiatoms(diatoms.map(d => 
+                        d.label[0] === selectedDiatom.label[0] 
+                            ? { ...d, bbox } 
+                            : d
+                    ));
+                    
+                    // Update selected diatom
+                    setSelectedDiatom(prev => ({ ...prev, bbox }));
+                    
+                    // Send update to server
+                    updateDiatomBBox(updatedDiatom);
+                }
+                setCurrentBox(null);
+            };
+
+            const handleDoubleClick = () => {
+                if (!selectedDiatom) return;
+                
+                // Create updated diatom object with empty bbox
+                const updatedDiatom = { ...selectedDiatom, bbox: '' };
+                
+                // Update local state
+                setDiatoms(diatoms.map(d => 
+                    d.label[0] === selectedDiatom.label[0] 
+                        ? { ...d, bbox: '' } 
+                        : d
+                ));
+                
+                setSelectedDiatom(prev => ({ ...prev, bbox: '' }));
+                
+                // Send update to server
+                updateDiatomBBox(updatedDiatom);
+            };
+
+            return (
+                <div className="flex h-screen bg-gray-200">
+                    {/* Left Sidebar */}
+                    <div className="w-64 bg-gray-800 fixed h-full flex flex-col items-center pt-5">
+                        <img 
+                            src="/static/diatomhub-images/logo/diatom_hub_5e.svg" 
+                            alt="DiatomHub Logo" 
+                            className="w-4/5 mb-5"
+                        />
+                    </div>
+
+                    {/* Main Content */}
+                    <div className="flex-1 ml-64 mr-96">
+                        <div className="flex flex-col items-center justify-center min-h-screen p-5">
+                            <div className="text-4xl font-bold mb-8 text-gray-800">
+                                {selectedDiatom ? selectedDiatom.label[0] : 'Select a species'}
+                            </div>
+                            <div 
+                                ref={containerRef}
+                                className="relative w-full max-w-4xl"
+                            >
+                                <img
+                                    ref={imageRef}
+                                    src="/static/label-images/2_Azores.png"
+                                    alt="Azores Diatom"
+                                    className="w-full"
+                                    onLoad={handleImageLoad}
+                                />
+                                <canvas
+                                    ref={canvasRef}
+                                    className="absolute top-0 left-0 w-full h-full cursor-crosshair"
+                                    onMouseDown={handleMouseDown}
+                                    onMouseMove={handleMouseMove}
+                                    onMouseUp={handleMouseUp}
+                                    onDoubleClick={handleDoubleClick}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right Sidebar */}
+                    <div className="w-96 bg-gray-800 fixed right-0 h-full overflow-y-auto">
+                        <div className="text-2xl font-bold text-white text-center py-5 border-b border-gray-700">
+                            Labels
+                        </div>
+                        <ul>
+                            {diatoms.map((diatom) => (
+                                <li
+                                    key={diatom.label[0]}
+                                    onClick={() => setSelectedDiatom(diatom)}
+                                    className={`
+                                        text-white p-3 cursor-pointer border-b border-gray-700 transition-colors
+                                        ${selectedDiatom?.label[0] === diatom.label[0] ? 'bg-green-500' : 'hover:bg-gray-700'}
+                                    `}
+                                >
+                                    {diatom.label[0]}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<DiatomLabeler />, document.getElementById('root'));
+    </script>
+</body>
+</html>
+
+

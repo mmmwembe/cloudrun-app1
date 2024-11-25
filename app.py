@@ -976,9 +976,33 @@ azores_2_diatoms = [
 
 
 
-@app.route('/label')
+@app.route('/label', methods=['GET', 'POST'])
 def label():
-    return render_template('label.html', diatoms=azores_2_diatoms)
+    global azores_2_diatoms
+    
+    if request.method == 'POST':
+        # Get updated diatom data
+        updated_diatom = request.json
+        
+        # Update the specific diatom in the array
+        for i, diatom in enumerate(azores_2_diatoms):
+            if diatom['label'][0] == updated_diatom['label'][0]:
+                azores_2_diatoms[i]['bbox'] = updated_diatom['bbox']
+                break
+                
+        return jsonify({'success': True})
+        
+    # GET request returns the template
+    return render_template('label-react.html', diatoms=azores_2_diatoms)
+
+# Add a route to get the current state of the diatoms array
+@app.route('/api/diatoms', methods=['GET'])
+def get_diatoms():
+    return jsonify(azores_2_diatoms)
+
+# @app.route('/label')
+# def label():
+#     return render_template('label.html', diatoms=azores_2_diatoms)
 
 
 
