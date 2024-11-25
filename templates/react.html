@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diatom Labeling</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        function DiatomLabeler() {
+            const [diatoms, setDiatoms] = React.useState([]);
+            const [selectedDiatom, setSelectedDiatom] = React.useState(null);
+
+            React.useEffect(() => {
+                fetch('/api/diatoms')
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Fetched data:', data);
+                        setDiatoms(data);
+                    })
+                    .catch(error => console.error('Error fetching diatoms:', error));
+            }, []);
+
+            return (
+                <div className="flex h-screen bg-gray-200">
+                    {/* Left Sidebar */}
+                    <div className="w-64 bg-gray-800 fixed h-full">
+                        <img 
+                            src="/static/diatomhub-images/logo/diatom_hub_5e.svg" 
+                            alt="DiatomHub Logo" 
+                            className="w-4/5 mx-auto mt-5"
+                        />
+                    </div>
+
+                    {/* Main Content */}
+                    <div className="flex-1 ml-64 mr-96 p-5">
+                        <div className="text-center">
+                            <h1 className="text-4xl font-bold mb-8">
+                                {selectedDiatom ? selectedDiatom.label[0] : 'Select a species'}
+                            </h1>
+                            <img
+                                src="/static/label-images/2_Azores.png"
+                                alt="Azores Diatom"
+                                className="max-w-4xl mx-auto"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Right Sidebar */}
+                    <div className="w-96 bg-gray-800 fixed right-0 h-full overflow-y-auto">
+                        <div className="text-2xl font-bold text-white text-center py-5 border-b border-gray-700">
+                            Labels
+                        </div>
+                        <ul>
+                            {diatoms.map((diatom) => (
+                                <li
+                                    key={diatom.label[0]}
+                                    onClick={() => setSelectedDiatom(diatom)}
+                                    className={`
+                                        text-white p-3 cursor-pointer border-b border-gray-700
+                                        ${selectedDiatom?.label[0] === diatom.label[0] ? 'bg-green-500' : 'hover:bg-gray-700'}
+                                    `}
+                                >
+                                    {diatom.label[0]}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<DiatomLabeler />);
+    </script>
+</body>
+</html>
