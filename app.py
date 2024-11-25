@@ -914,6 +914,39 @@ def display_table():
     return render_template('colosus.html', data=data)
 
 
+# Define the diatoms array
+azores_2_diatoms = [
+    [39, "Amphora_obtusa_var_oceanica"],
+    [40, "Amphora_obtusa"],
+    [41, "Amphora_obtusa"],
+    [42, "Amphora_obtusa"],
+    [43, "Halamphora_cymbifera"],
+    [44, "Amphora_bistriata"],
+    [45, "Amphora_praelata"],
+    [46, "Amphora_spectabilis"],
+    [47, "Amphora_ocellata"],
+    [48, "Amphora_crassa"],
+    [49, "Amphora_crassa"],
+    [50, "Amphora_crassa"],
+    [51, "Diploneis_mirabilis"],
+    [52, "Lyrella_impercepta"],
+    [53, "Amphora_cingulata"],
+    [54, "Amphora_cingulata"],
+    [55, "Amphora_cingulata"],
+    [56, "Amphora_sp_indet"],
+    [57, "Parlibellus_delognei"],
+    [58, "Parlibellus_delognei"],
+    [59, "Navicula_digitoradiata"],
+    [60, "Navicula_palpebralis"],
+    [61, "Navicula_palpebralis"],
+    [62, "Diploneis_papula"],
+    [63, "Navicula_applicita"],
+    [64, "Navicula_applicita"]
+]
+
+@app.route('/label')
+def label():
+    return render_template('label.html', diatoms=azores_2_diatoms)
 
 
 
