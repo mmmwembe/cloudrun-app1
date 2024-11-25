@@ -12,7 +12,7 @@
             font-family: 'Arial', sans-serif;
         }
 
-        /* Left Sidebar Styles (from original) */
+        /* Left Sidebar Styles */
         .sidebar-left {
             height: 100%;
             width: 250px;
@@ -31,7 +31,7 @@
         /* Right Sidebar Styles */
         .sidebar-right {
             height: 100%;
-            width: 250px;
+            width: 375px; /* 1.5 times wider than left sidebar */
             position: fixed;
             top: 0;
             right: 0;
@@ -40,6 +40,16 @@
             transition: 0.3s;
             z-index: 1000;
             overflow-y: auto;
+        }
+
+        .sidebar-title {
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 10px;
+            border-bottom: 2px solid #34495e;
         }
 
         .species-selector {
@@ -65,7 +75,8 @@
         }
 
         .content {
-            margin: 0 250px;
+            margin-left: 250px;
+            margin-right: 375px; /* Match the right sidebar width */
             padding: 20px;
             text-align: center;
             min-height: 100vh;
@@ -114,27 +125,15 @@
 
     <!-- Right Sidebar -->
     <div class="sidebar-right">
+        <div class="sidebar-title">Labels</div>
         <ul class="species-selector" id="speciesSelector">
             {% for index, species in diatoms %}
-            <li class="species-item" data-species="{{ species }}">
+            <li class="species-item" data-species="{{ species }}" data-index="{{ index }}">
                 {{ index }} {{ species }}
             </li>
             {% endfor %}
         </ul>
     </div>
-
-
-    <form id="goHome" class="mt-4 d-flex justify-content-center">
-        <button 
-            type="button" 
-            onclick="window.location.href='/'" 
-            style="font-size: 2rem; padding: 1.5rem 3rem; border-radius: 0.75rem;" 
-            class="btn btn-success"
-        >
-            Home
-        </button>
-    </form>
-
 
     <script>
         document.querySelectorAll('.species-item').forEach(item => {
@@ -147,9 +146,10 @@
                 // Add selected class to clicked item
                 this.classList.add('selected');
                 
-                // Update the displayed species name
+                // Update the displayed species name with index
                 const speciesName = this.dataset.species;
-                document.getElementById('selectedSpecies').textContent = speciesName;
+                const index = this.dataset.index;
+                document.getElementById('selectedSpecies').textContent = `${index} ${speciesName}`;
             });
         });
     </script>
