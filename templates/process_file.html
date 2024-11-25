@@ -196,23 +196,37 @@
         
         EXTRACTED TEXT
         <div id="extracted_text" class="text-center"></div>
-        <div class="border-b-2 border-gray-300 my-4"></div>     
+        <div class="border-b-2 border-gray-300 my-4"></div>  
+          
+        LLM_JSON_OUTPUT
         <div id="llm_json_output" class="text-center"></div>
+        <div class="border-b-2 border-gray-300 my-4"></div> 
 
         PDF METADATA
         <div class="border-b-2 border-gray-300 my-4"></div>     
         <div id="result_string" class="text-center"></div>
+        <div class="border-b-2 border-gray-300 my-4"></div> 
 
         CITATION
         <div class="border-b-2 border-gray-300 my-4"></div>     
         <div id="citation" class="text-center"></div>
+        <div class="border-b-2 border-gray-300 my-4"></div> 
 
         PROCESSED FILES CSV FILE
         <div class="border-b-2 border-gray-300 my-4"></div>     
-        <div id="processed_files_csv_url" class="text-center"></div>
-
-               
+        <div id="processed_files_csv_url" class="text-center"></div>     
     </div>
+
+    <form id="goHome" class="mt-4 d-flex justify-content-center">
+        <button 
+            type="button" 
+            onclick="window.location.href='/'" 
+            style="font-size: 2rem; padding: 1.5rem 3rem; border-radius: 0.75rem;" 
+            class="btn btn-success"
+        >
+            Home
+        </button>
+    </form>
 
     <script>
     document.addEventListener('DOMContentLoaded', function() {
