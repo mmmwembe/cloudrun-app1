@@ -29,6 +29,7 @@
                 return colors[Math.floor(Math.random() * colors.length)];
             };
 
+            // Fetch initial diatoms data
             React.useEffect(() => {
                 fetch('/api/diatoms')
                     .then(response => response.json())
@@ -42,6 +43,7 @@
                     .catch(error => console.error('Error fetching diatoms:', error));
             }, []);
 
+            // Draw all bounding boxes
             const drawAllBoundingBoxes = () => {
                 const canvas = canvasRef.current;
                 if (!canvas) return;
@@ -56,11 +58,6 @@
                         ctx.strokeStyle = diatom.boxColor || getRandomColor();
                         ctx.lineWidth = 3;
                         ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
-
-                        // Add index text
-                        ctx.font = '16px Arial';
-                        ctx.fillStyle = diatom.boxColor || getRandomColor();
-                        ctx.fillText(diatom.index.toString(), x1 + 5, y1 + 20);
                     }
                 });
 
@@ -77,6 +74,7 @@
                 }
             };
 
+            // Handle canvas drawing
             React.useEffect(() => {
                 drawAllBoundingBoxes();
             }, [diatoms, currentBox, selectedDiatom]);
@@ -166,10 +164,12 @@
             const handleDoubleClick = (e) => {
                 if (!selectedDiatom) return;
 
+                // Get click coordinates
                 const rect = canvasRef.current.getBoundingClientRect();
                 const x = e.clientX - rect.left;
                 const y = e.clientY - rect.top;
 
+                // Check if click is inside any bounding box
                 const clickedBox = diatoms.find(diatom => {
                     if (!diatom.bbox) return false;
                     const [x1, y1, x2, y2] = diatom.bbox.split(',').map(Number);
@@ -177,6 +177,7 @@
                 });
 
                 if (clickedBox) {
+                    // Clear the bbox of clicked diatom
                     const updatedDiatoms = diatoms.map(d => 
                         d.label[0] === clickedBox.label[0] 
                             ? { ...d, bbox: '', boxColor: null } 
@@ -184,10 +185,12 @@
                     );
                     setDiatoms(updatedDiatoms);
 
+                    // If the clicked box was the selected diatom, update selected diatom state
                     if (selectedDiatom.label[0] === clickedBox.label[0]) {
                         setSelectedDiatom(prev => ({ ...prev, bbox: '', boxColor: null }));
                     }
 
+                    // Send update to server
                     updateDiatomBBox({ ...clickedBox, bbox: '' });
                 }
             };
@@ -256,9 +259,11 @@
             );
         }
 
+        // Initialize React application
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<DiatomLabeler />);
     </script>
 </body>
 </html>
+
 
