@@ -511,7 +511,8 @@ def process_files():
     #     # Upload the CSV file to the bucket and get the public URL
     #     processed_files_csv_url = save_csv_to_bucket_v2(local_file_path=local_file_path, bucket_name=PAPERS_PROCESSED_BUCKET, session_id=SESSION_ID)
 
-    # except Exception as e:
+    except Exception as e:
+        pass
     #     # Log the error (can be replaced with a logging solution)
     #     print(f"Error processing file at index {current_index}: {e}")
         
