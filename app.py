@@ -9,7 +9,7 @@ import pandas as pd
 from modules.process_pdfs import process_pdf
 from modules.claude_ai import create_claude_prompt, encode_pdf_to_base64, create_messages, get_completion
 from modules.groq_llama import get_llama_paper_info
-from modules.gcp_ops import save_file_to_bucket, save_tracker_csv, initialize_paper_upload_tracker_df_from_gcp, save_json_to_bucket
+from modules.gcp_ops import save_file_to_bucket, save_tracker_csv, initialize_paper_upload_tracker_df_from_gcp, save_json_to_bucket, save_paper_json_files, load_paper_json_files
 # save_file_to_bucket(artifact_url, session_id, file_hash_num, bucket_name, subdir="papers"
 from datetime import datetime
 from modules.llm_ops import llm_parsed_output_from_text, create_messages, llm_with_JSON_output
@@ -22,6 +22,7 @@ import tempfile
 from modules.utils import extract_text_from_pdf
 import time
 import uuid
+import traceback
 
 load_dotenv()
 
@@ -43,6 +44,7 @@ FILE_HASH_NUM = '8c583173bc904ce596d5de69ac432acb'
 PAPERS_BUCKET ='papers-diatoms'
 PAPERS_PROCESSED_BUCKET ='papers-diatoms-processed'
 PAPERS_BUCKET_LABELLING ='papers-diatoms-labelling'
+PAPERS_BUCKET_JSON_FILES ='papers-diatoms-jsons'
 
 ALLOWED_EXTENSIONS = {'pdf'}
 
@@ -389,6 +391,8 @@ def upload_file():
     #files = get_public_urls2(BUCKET_NAME, SESSION_ID, FILE_HASH_NUM)
     return render_template('upload_images.html', files=files)
 
+
+
 @app.route('/goto_processfile/')
 def go_to_processfile():
     
@@ -402,7 +406,7 @@ def go_to_processfile():
     # Get number of rows
     num_rows = len(df)  # or df.shape[0]
     
-    return render_template('process_file.html', number_of_files=num_rows)
+    return render_template('process_file.html', number_of_files=num_rows, session_id=SESSION_ID)
 
 # @app.route('/process_files/', methods=['POST'])
 # def process_files():
@@ -460,6 +464,114 @@ def go_to_processfile():
 #     })
 
 
+# @app.route('/process_files/', methods=['POST'])
+# def process_files():
+#     try:
+#         # Get the current index from the request body
+#         current_index = int(request.json.get('index', 0))
+        
+#         # Check if the index exceeds the length of the DataFrame
+#         if current_index >= len(PARENT_FILES_PD):
+#             return jsonify({'done': True}), 200
+            
+#         # Get the current file from the DataFrame
+#         current_file = PARENT_FILES_PD.iloc[current_index]
+        
+#         # Extract necessary information from the current file
+#         public_url = current_file['gcp_public_url']
+#         filename = public_url.split('/')[-1]
+
+#         # Get the citation (you may have to adjust this method based on how you handle citation)
+#         citation = get_default_citation()
+
+#         # Extract additional information: result, pdf text, and LLM output
+#         result = extract_images_and_metadata_from_pdf(public_url, SESSION_ID, BUCKET_EXTRACTED_IMAGES)
+#         pdf_text_content = extract_text_from_pdf(public_url)
+#         llm_json_output = llm_with_JSON_output(pdf_text_content)
+#         papers_json_public_url =''
+
+#         # Validate arguments before proceeding
+#         # if not validate_update_arguments(
+#         #     result=result,
+#         #     citation=citation,
+#         #     llm_json_output=llm_json_output,
+#         #     public_url=public_url,
+#         #     filename=filename,
+#         #     pdf_text_content=pdf_text_content
+#         # ):
+#         #     return jsonify({"error": "Invalid input"}), 400
+
+#         # # Update the DataFrame
+#         # update_process_files_pd(result, citation, llm_json_output, public_url, filename, pdf_text_content)
+
+#         # # Save the DataFrame to a local file (before calling the save to bucket method)
+#         # local_file_path = os.path.join('static', 'csv', f'{SESSION_ID}.csv')  # Use session_id for the file name
+#         # # Ensure the directory exists
+#         # os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
+
+#         # # Save the DataFrame locally to the file path
+#         # PROCESS_FILES_PD.to_csv(local_file_path, index=False)
+
+#     #     # Upload the CSV file to the bucket and get the public URL
+#     #     processed_files_csv_url = save_csv_to_bucket_v2(local_file_path=local_file_path, bucket_name=PAPERS_PROCESSED_BUCKET, session_id=SESSION_ID)
+
+#     except Exception as e:
+#         pass
+#     #     # Log the error (can be replaced with a logging solution)
+#     #     print(f"Error processing file at index {current_index}: {e}")
+        
+#     #     # Return a generic error response
+#     #     return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+
+#     # Return detailed response with the URL of the uploaded CSV
+#     return jsonify({
+#         'done': False,
+#         'gcp_public_url': safe_value(public_url),
+#         'current_index': safe_value(current_index),
+#         'total_files': safe_value(len(PROCESS_FILES_PD)),
+#         'extracted_text': safe_value(str(pdf_text_content)),
+#         'llm_json_output': safe_value(json.dumps(llm_json_output)),
+#         'result_string': safe_value(json.dumps(result)),
+#         'citation': safe_value(json.dumps(citation)),
+#         'papers_json_public_url': safe_value(papers_json_public_url),  # Include the URL of the saved CSV
+#     }), 200
+
+@app.route('/download_papers_json/', methods=['POST'])
+def download_json():
+    try:
+        json_url = request.json.get('json_url')
+        if not json_url:
+            return jsonify({'error': 'No JSON URL provided'}), 400
+
+        # Download the JSON file from GCS
+        response = requests.get(json_url)
+        response.raise_for_status()  # Raise an exception for bad status codes
+
+        # Create a temporary file
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.json') as tmp_file:
+            tmp_file.write(response.content)
+            tmp_file_path = tmp_file.name
+
+        # Send the file to the client
+        return send_file(
+            tmp_file_path,
+            mimetype='application/json',
+            as_attachment=True,
+            download_name=f"{SESSION_ID}.json"
+        )
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+    finally:
+        # Clean up the temporary file
+        if 'tmp_file_path' in locals():
+            try:
+                os.unlink(tmp_file_path)
+            except:
+                pass
+
+
 @app.route('/process_files/', methods=['POST'])
 def process_files():
     try:
@@ -476,62 +588,61 @@ def process_files():
         # Extract necessary information from the current file
         public_url = current_file['gcp_public_url']
         filename = public_url.split('/')[-1]
-
-        # Get the citation (you may have to adjust this method based on how you handle citation)
-        citation = get_default_citation()
-
-        # Extract additional information: result, pdf text, and LLM output
+        
+        # Construct papers_json_public_url
+        papers_json_public_url = f"https://storage.googleapis.com/{PAPERS_BUCKET_JSON_FILES}/jsons_from_pdfs/{SESSION_ID}/{SESSION_ID}.json"
+        
+        # Load existing PAPER_JSON_FILES
+        PAPER_JSON_FILES = load_paper_json_files(papers_json_public_url)
+        
+        # Extract information from PDF
         result = extract_images_and_metadata_from_pdf(public_url, SESSION_ID, BUCKET_EXTRACTED_IMAGES)
         pdf_text_content = extract_text_from_pdf(public_url)
         llm_json_output = llm_with_JSON_output(pdf_text_content)
-        processed_files_csv_url =''
-
-        # Validate arguments before proceeding
-        # if not validate_update_arguments(
-        #     result=result,
-        #     citation=citation,
-        #     llm_json_output=llm_json_output,
-        #     public_url=public_url,
-        #     filename=filename,
-        #     pdf_text_content=pdf_text_content
-        # ):
-        #     return jsonify({"error": "Invalid input"}), 400
-
-        # # Update the DataFrame
-        # update_process_files_pd(result, citation, llm_json_output, public_url, filename, pdf_text_content)
-
-        # # Save the DataFrame to a local file (before calling the save to bucket method)
-        # local_file_path = os.path.join('static', 'csv', f'{SESSION_ID}.csv')  # Use session_id for the file name
-        # # Ensure the directory exists
-        # os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
-
-        # # Save the DataFrame locally to the file path
-        # PROCESS_FILES_PD.to_csv(local_file_path, index=False)
-
-    #     # Upload the CSV file to the bucket and get the public URL
-    #     processed_files_csv_url = save_csv_to_bucket_v2(local_file_path=local_file_path, bucket_name=PAPERS_PROCESSED_BUCKET, session_id=SESSION_ID)
-
-    except Exception as e:
-        pass
-    #     # Log the error (can be replaced with a logging solution)
-    #     print(f"Error processing file at index {current_index}: {e}")
         
-    #     # Return a generic error response
-    #     return jsonify({"error": f"An error occurred: {str(e)}"}), 500
+        # Apply safe_value to llm_json_output
+        llm_json_output = safe_value(llm_json_output)
+        
+        # Get citation
+        citation = get_default_citation()
+        
+        # Create new paper JSON object
+        pdf_paper_json = {
+            "pdf_file_url": safe_value(public_url),
+            "filename": safe_value(filename),
+            "result": safe_value(result),
+            "pdf_text_content": safe_value(pdf_text_content),
+            "llm_json_output": safe_value(llm_json_output),
+            "papers_json_public_url": papers_json_public_url if papers_json_public_url else "",
+            "diatoms_data": [],
+            "citation": safe_value(citation)
+        }
+        
+        # Check if paper already exists in PAPER_JSON_FILES
+        if not any(paper['pdf_file_url'] == public_url for paper in PAPER_JSON_FILES):
+            PAPER_JSON_FILES.append(pdf_paper_json)
+            
+        # Save updated PAPER_JSON_FILES
+        papers_json_public_url = save_paper_json_files(papers_json_public_url, PAPER_JSON_FILES)
+        
 
-    # Return detailed response with the URL of the uploaded CSV
-    return jsonify({
-        'done': False,
-        'gcp_public_url': safe_value(public_url),
-        'current_index': safe_value(current_index),
-        'total_files': safe_value(len(PROCESS_FILES_PD)),
-        'extracted_text': safe_value(str(pdf_text_content)),
-        'llm_json_output': safe_value(json.dumps(llm_json_output)),
-        'result_string': safe_value(json.dumps(result)),
-        'citation': safe_value(json.dumps(citation)),
-        'processed_files_csv_url': safe_value(processed_files_csv_url),  # Include the URL of the saved CSV
-    }), 200
-
+        return jsonify({
+            'done': False,
+            'gcp_public_url': safe_value(public_url),
+            'current_index': safe_value(current_index),
+            'total_files': safe_value(len(PARENT_FILES_PD)),
+            'extracted_text': safe_value(str(pdf_text_content)),
+            'llm_json_output': safe_value(json.dumps(llm_json_output)),
+            'result_string': safe_value(json.dumps(result)),
+            'citation': safe_value(json.dumps(citation)),
+            'papers_json_public_url': safe_value(papers_json_public_url)
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'error': str(e),
+            'trace': traceback.format_exc()
+        }), 500
 
 
 

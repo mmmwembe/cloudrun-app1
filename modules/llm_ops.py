@@ -218,6 +218,32 @@ def get_default_citation():
         'url': "http://pubs.usgs.gov/of/2012/1163/"
 }
     
+def get_default_citation():
+    return {
+        # Core citation elements
+        'authors': ["S.R. Stidolph", "F.A.S. Sterrenburg", "K.E.L. Smith", "A. Kraberg"],  # List of authors in citation format
+        'year': "2012",                # Publication year as string
+        'title': "Stuart R. Stidolph Diatom Atlas",  # Full title of the work
+        'type': "report",              # "article", "report", "book", "chapter", etc.
+        
+        # Journal-specific fields (empty for non-articles)
+        'journal': "",                 # Full journal name
+        'volume': "",                  # Volume number as string
+        'issue': "",                   # Issue number as string  
+        'pages': "199",                # Page range or total pages as string
+        
+        # Organization-specific fields (empty for articles)
+        'organization': "U.S. Geological Survey",  # Publishing institution/organization
+        'report_number': "Open-File Report 2012-1163",  # Report ID/number
+        
+        # Digital identification
+        'doi': "",                     # Digital Object Identifier if available
+        'url': "http://pubs.usgs.gov/of/2012/1163/",  # Direct URL to publication
+        
+        # Complete formatted reference
+        'full_citation': "Stidolph, S.R., Sterrenburg, F.A.S., Smith, K.E.L., Kraberg, A., 2012, Stuart R. Stidolph Diatom Atlas: U.S. Geological Survey Open-File Report 2012-1163, 199 p., available at http://pubs.usgs.gov/of/2012/1163/"  # Required complete formatted citation
+}
+    
 def get_storage_client():
     """Get authenticated GCS client"""
     return storage.Client.from_service_account_info(json.loads(secret_json))

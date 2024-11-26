@@ -288,3 +288,41 @@ def save_json_to_bucket(local_file_path, bucket_name, session_id):
     
     #save_json_to_bucket(local_file_path, bucket_name, session_id)
     #public_url = f"https://storage.googleapis.com/{bucket_name}/labels/{SESSION_ID}/{SESSION_ID}.json"
+    
+    
+def load_paper_json_files(papers_json_public_url):
+    """Load existing paper JSON files if they exist."""
+    try:
+        storage_client = storage.Client.from_service_account_info(json.loads(secret_json))
+        bucket_name = papers_json_public_url.split('/')[3]
+        blob_path = '/'.join(papers_json_public_url.split('/')[4:])
+        
+        bucket = storage_client.bucket(bucket_name)
+        blob = bucket.blob(blob_path)
+        
+        if blob.exists():
+            content = blob.download_as_string()
+            return json.loads(content)
+    except Exception as e:
+        print(f"Error loading paper JSON files: {str(e)}")
+    return []
+
+
+def save_paper_json_files(papers_json_public_url, paper_json_files):
+    """Save paper JSON files to GCS."""
+    try:
+        storage_client = storage.Client.from_service_account_info(json.loads(secret_json))
+        bucket_name = papers_json_public_url.split('/')[3]
+        blob_path = '/'.join(papers_json_public_url.split('/')[4:])
+        
+        bucket = storage_client.bucket(bucket_name)
+        blob = bucket.blob(blob_path)
+        
+        blob.upload_from_string(
+            json.dumps(paper_json_files),
+            content_type='application/json'
+        )
+        return papers_json_public_url
+    except Exception as e:
+        print(f"Error saving paper JSON files: {str(e)}")
+        return ""

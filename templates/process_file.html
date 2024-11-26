@@ -228,7 +228,23 @@
         </button>
     </form>
 
+
+    <form id="downloadJSON" class="mt-4 d-flex justify-content-center">
+        <button 
+            type="button" 
+            onclick="window.location.href='/'" 
+            style="font-size: 2rem; padding: 1.5rem 3rem; border-radius: 0.75rem;" 
+            class="btn btn-success"
+        >
+            Download JSON
+        </button>
+    </form>
+
     <script>
+   
+    
+
+
     document.addEventListener('DOMContentLoaded', function() {
         const spinner = document.getElementById('spinner');
         const currentUrl = document.getElementById('current-url');
@@ -236,6 +252,8 @@
         const currentTotalFiles = document.getElementById('total_files');
         const completionStatus = document.getElementById('completion-status');
         const numFiles = parseInt(document.getElementById('num_of_files').value);
+
+        const SESSION_ID = "{{ session_id }}";
 
 
         const extracted_text = document.getElementById('extracted_text');
@@ -277,7 +295,7 @@
                 llm_json_output.textContent = data.llm_json_output;
                 result_string.textContent = data.result_string;
                 citation.textContent = data.citation;
-                processed_files_csv_url.textContent = data.processed_files_csv_url;
+                processed_files_csv_url.textContent = data.papers_json_public_url;
 
                 // Increment counter
                 currentIndex++;
@@ -296,6 +314,42 @@
         // Start processing
         processNextFile();
     });
+
+
+
+    function downloadJSON() {
+    const jsonUrl = document.getElementById('processed_files_csv_url').textContent;
+    if (!jsonUrl) {
+        alert('No JSON URL available yet. Please wait for processing to complete.');
+        return;
+    }
+    
+    fetch('/download_papers_json/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ json_url: jsonUrl })
+    })
+    .then(response => response.blob())
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${SESSION_ID}.json`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+    })
+    .catch(error => {
+        console.error('Error downloading JSON:', error);
+        alert('Error downloading JSON file. Please try again.');
+    });
+    }
+
+
+
     </script>
 </body>
 </html>
