@@ -286,5 +286,5 @@ def save_json_to_bucket(local_file_path, bucket_name, session_id):
         print(f"Error uploading file to bucket '{bucket_name}': {e}")
         return None, None
     
-    
-    #public_url = f"https://storage.googleapis.com/{bucket_name}/labels/{SESSION_ID}/{SESSION_ID}.json""
+    #save_json_to_bucket(local_file_path, bucket_name, session_id)
+    #public_url = f"https://storage.googleapis.com/{bucket_name}/labels/{SESSION_ID}/{SESSION_ID}.json"

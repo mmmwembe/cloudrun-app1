@@ -1320,6 +1320,7 @@ def save():
             'error': str(e)
         }), 500
 
+
 @app.route('/api/download', methods=['GET'])
 def download_labels():
     """Download the saved labels file for current session"""
