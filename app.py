@@ -1,6 +1,6 @@
 # app.py
 import os
-from flask import Flask, render_template, request, flash, redirect, url_for, Response, jsonify
+from flask import Flask, render_template, request, flash, redirect, url_for, Response, jsonify, send_file
 from werkzeug.utils import secure_filename
 from google.cloud import storage
 import json
@@ -974,63 +974,247 @@ def display_table():
 #     {"label": ["64 Navicula_applicita"], "species": "Navicula_applicita", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''}
 # ]
 
-azores_2_diatoms = [
-    {"label": ["39 Amphora_obtusa_var_oceanica"], "index": 39, "species": "Amphora_obtusa_var_oceanica", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
-    {"label": ["40 Amphora_obtusa"], "index": 40, "species": "Amphora_obtusa", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
-    {"label": ["41 Amphora_obtusa"], "index": 41, "species": "Amphora_obtusa", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
-    {"label": ["42 Amphora_obtusa"], "index": 42, "species": "Amphora_obtusa", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
-    {"label": ["43 Halamphora_cymbifera"], "index": 43, "species": "Halamphora_cymbifera", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
-    {"label": ["44 Amphora_bistriata"], "index": 44, "species": "Amphora_bistriata", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
-    {"label": ["45 Amphora_praelata"], "index": 45, "species": "Amphora_praelata", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
-    {"label": ["46 Amphora_spectabilis"], "index": 46, "species": "Amphora_spectabilis", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
-    {"label": ["47 Amphora_ocellata"], "index": 47, "species": "Amphora_ocellata", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
-    {"label": ["48 Amphora_crassa"], "index": 48, "species": "Amphora_crassa", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
-    {"label": ["49 Amphora_crassa"], "index": 49, "species": "Amphora_crassa", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
-    {"label": ["50 Amphora_crassa"], "index": 50, "species": "Amphora_crassa", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
-    {"label": ["51 Diploneis_mirabilis"], "index": 51, "species": "Diploneis_mirabilis", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
-    {"label": ["52 Lyrella_impercepta"], "index": 52, "species": "Lyrella_impercepta", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
-    {"label": ["53 Amphora_cingulata"], "index": 53, "species": "Amphora_cingulata", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
-    {"label": ["54 Amphora_cingulata"], "index": 54, "species": "Amphora_cingulata", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
-    {"label": ["55 Amphora_cingulata"], "index": 55, "species": "Amphora_cingulata", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
-    {"label": ["56 Amphora_sp_indet"], "index": 56, "species": "Amphora_sp_indet", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
-    {"label": ["57 Parlibellus_delognei"], "index": 57, "species": "Parlibellus_delognei", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
-    {"label": ["58 Parlibellus_delognei"], "index": 58, "species": "Parlibellus_delognei", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
-    {"label": ["59 Navicula_digitoradiata"], "index": 59, "species": "Navicula_digitoradiata", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
-    {"label": ["60 Navicula_palpebralis"], "index": 60, "species": "Navicula_palpebralis", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
-    {"label": ["61 Navicula_palpebralis"], "index": 61, "species": "Navicula_palpebralis", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
-    {"label": ["62 Diploneis_papula"], "index": 62, "species": "Diploneis_papula", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
-    {"label": ["63 Navicula_applicita"], "index": 63, "species": "Navicula_applicita", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
-    {"label": ["64 Navicula_applicita"], "index": 64, "species": "Navicula_applicita", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''}
-]
+# azores_2_diatoms = [
+#     {"label": ["39 Amphora_obtusa_var_oceanica"], "index": 39, "species": "Amphora_obtusa_var_oceanica", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+#     {"label": ["40 Amphora_obtusa"], "index": 40, "species": "Amphora_obtusa", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+#     {"label": ["41 Amphora_obtusa"], "index": 41, "species": "Amphora_obtusa", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+#     {"label": ["42 Amphora_obtusa"], "index": 42, "species": "Amphora_obtusa", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+#     {"label": ["43 Halamphora_cymbifera"], "index": 43, "species": "Halamphora_cymbifera", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+#     {"label": ["44 Amphora_bistriata"], "index": 44, "species": "Amphora_bistriata", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+#     {"label": ["45 Amphora_praelata"], "index": 45, "species": "Amphora_praelata", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+#     {"label": ["46 Amphora_spectabilis"], "index": 46, "species": "Amphora_spectabilis", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+#     {"label": ["47 Amphora_ocellata"], "index": 47, "species": "Amphora_ocellata", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+#     {"label": ["48 Amphora_crassa"], "index": 48, "species": "Amphora_crassa", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+#     {"label": ["49 Amphora_crassa"], "index": 49, "species": "Amphora_crassa", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+#     {"label": ["50 Amphora_crassa"], "index": 50, "species": "Amphora_crassa", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+#     {"label": ["51 Diploneis_mirabilis"], "index": 51, "species": "Diploneis_mirabilis", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+#     {"label": ["52 Lyrella_impercepta"], "index": 52, "species": "Lyrella_impercepta", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+#     {"label": ["53 Amphora_cingulata"], "index": 53, "species": "Amphora_cingulata", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+#     {"label": ["54 Amphora_cingulata"], "index": 54, "species": "Amphora_cingulata", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+#     {"label": ["55 Amphora_cingulata"], "index": 55, "species": "Amphora_cingulata", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+#     {"label": ["56 Amphora_sp_indet"], "index": 56, "species": "Amphora_sp_indet", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+#     {"label": ["57 Parlibellus_delognei"], "index": 57, "species": "Parlibellus_delognei", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+#     {"label": ["58 Parlibellus_delognei"], "index": 58, "species": "Parlibellus_delognei", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+#     {"label": ["59 Navicula_digitoradiata"], "index": 59, "species": "Navicula_digitoradiata", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+#     {"label": ["60 Navicula_palpebralis"], "index": 60, "species": "Navicula_palpebralis", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+#     {"label": ["61 Navicula_palpebralis"], "index": 61, "species": "Navicula_palpebralis", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+#     {"label": ["62 Diploneis_papula"], "index": 62, "species": "Diploneis_papula", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+#     {"label": ["63 Navicula_applicita"], "index": 63, "species": "Navicula_applicita", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''},
+#     {"label": ["64 Navicula_applicita"], "index": 64, "species": "Navicula_applicita", "bbox": '', "yolo_bbox": '', "segmentation": '', "embeddings": ''}
+# ]
+
+# diatoms_data = [
+#     {
+#         "image_url": "/static/label-images/2_Azores.png",
+#         "image_width": "",
+#         "image_height": "",
+#         "info": [
+#             {"label": ["39 Amphora_obtusa_var_oceanica"], "index": 39, "species": "Amphora_obtusa_var_oceanica", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+#             {"label": ["40 Amphora_obtusa"], "index": 40, "species": "Amphora_obtusa", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+#             {"label": ["41 Amphora_obtusa"], "index": 41, "species": "Amphora_obtusa", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+#         ]
+#     },
+#     {
+#         "image_url": "/static/label-images/5_Azores.png",
+#         "image_width": "",
+#         "image_height": "",
+#         "info": [
+#             {"label": ["108 Amphitetras_subrotundata"], "index": 108, "species": "Amphitetras_subrotundata", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+#             {"label": ["109 Amphitetras_subrotundata"], "index": 109, "species": "Amphitetras_subrotundata", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+#         ]
+#     },
+#     {
+#         "image_url": "/static/label-images/4_Azores.png",
+#         "image_width": "",
+#         "image_height": "",
+#         "info": [
+#             {"label": ["88 Actinocyclus_sp_indet"], "index": 88, "species": "Actinocyclus_sp_indet", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+#             {"label": ["89 Endictya_oceanica"], "index": 89, "species": "Endictya_oceanica", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+#         ]
+#     }
+# ]
 
 
-@app.route('/label', methods=['GET', 'POST'])
-def label():
-    global azores_2_diatoms
+
+# @app.route('/label', methods=['GET', 'POST'])
+# def label():
+#     global azores_2_diatoms
     
-    if request.method == 'POST':
-        # Get updated diatom data
-        updated_diatom = request.json
+#     if request.method == 'POST':
+#         # Get updated diatom data
+#         updated_diatom = request.json
         
-        # Update the specific diatom in the array
-        for i, diatom in enumerate(azores_2_diatoms):
-            if diatom['label'][0] == updated_diatom['label'][0]:
-                azores_2_diatoms[i]['bbox'] = updated_diatom['bbox']
-                break
+#         # Update the specific diatom in the array
+#         for i, diatom in enumerate(azores_2_diatoms):
+#             if diatom['label'][0] == updated_diatom['label'][0]:
+#                 azores_2_diatoms[i]['bbox'] = updated_diatom['bbox']
+#                 break
                 
-        return jsonify({'success': True})
+#         return jsonify({'success': True})
         
-    # GET request returns the template
-    return render_template('label-react.html', diatoms=azores_2_diatoms)
+#     # GET request returns the template
+#     return render_template('label-react.html', diatoms=azores_2_diatoms)
 
-# Add a route to get the current state of the diatoms array
-@app.route('/api/diatoms', methods=['GET'])
-def get_diatoms():
-    return jsonify(azores_2_diatoms)
+# # Add a route to get the current state of the diatoms array
+# @app.route('/api/diatoms', methods=['GET'])
+# def get_diatoms():
+#     return jsonify(azores_2_diatoms)
 
 # @app.route('/label')
 # def label():
 #     return render_template('label.html', diatoms=azores_2_diatoms)
+diatoms_data = [
+    {
+        "image_url": "/static/label-images/2_Azores.png",
+        "image_width": "",
+        "image_height": "",
+        "info": [
+            {"label": ["39 Amphora_obtusa_var_oceanica"], "index": 39, "species": "Amphora_obtusa_var_oceanica", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["40 Amphora_obtusa"], "index": 40, "species": "Amphora_obtusa", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["41 Amphora_obtusa"], "index": 41, "species": "Amphora_obtusa", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["42 Amphora_obtusa"], "index": 42, "species": "Amphora_obtusa", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["43 Halamphora_cymbifera"], "index": 43, "species": "Halamphora_cymbifera", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["44 Amphora_bistriata"], "index": 44, "species": "Amphora_bistriata", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["45 Amphora_praelata"], "index": 45, "species": "Amphora_praelata", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["46 Amphora_spectabilis"], "index": 46, "species": "Amphora_spectabilis", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["47 Amphora_ocellata"], "index": 47, "species": "Amphora_ocellata", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["48 Amphora_crassa"], "index": 48, "species": "Amphora_crassa", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["49 Amphora_crassa"], "index": 49, "species": "Amphora_crassa", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["50 Amphora_crassa"], "index": 50, "species": "Amphora_crassa", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["51 Diploneis_mirabilis"], "index": 51, "species": "Diploneis_mirabilis", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["52 Lyrella_impercepta"], "index": 52, "species": "Lyrella_impercepta", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["53 Amphora_cingulata"], "index": 53, "species": "Amphora_cingulata", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["54 Amphora_cingulata"], "index": 54, "species": "Amphora_cingulata", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["55 Amphora_cingulata"], "index": 55, "species": "Amphora_cingulata", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["56 Amphora_sp_indet"], "index": 56, "species": "Amphora_sp_indet", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["57 Parlibellus_delognei"], "index": 57, "species": "Parlibellus_delognei", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["58 Parlibellus_delognei"], "index": 58, "species": "Parlibellus_delognei", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["59 Navicula_digitoradiata"], "index": 59, "species": "Navicula_digitoradiata", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["60 Navicula_palpebralis"], "index": 60, "species": "Navicula_palpebralis", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["61 Navicula_palpebralis"], "index": 61, "species": "Navicula_palpebralis", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["62 Diploneis_papula"], "index": 62, "species": "Diploneis_papula", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["63 Navicula_applicita"], "index": 63, "species": "Navicula_applicita", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["64 Navicula_applicita"], "index": 64, "species": "Navicula_applicita", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""}
+        ]
+    },
+    {
+        "image_url": "/static/label-images/5_Azores.png",
+        "image_width": "",
+        "image_height": "",
+        "info": [
+            {"label": ["108 Amphitetras_subrotundata"], "index": 108, "species": "Amphitetras_subrotundata", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["109 Amphitetras_subrotundata"], "index": 109, "species": "Amphitetras_subrotundata", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["110 Amphitetras_subrotundata"], "index": 110, "species": "Amphitetras_subrotundata", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["111 Amphitetras_subrotundata"], "index": 111, "species": "Amphitetras_subrotundata", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["112 Amphitetras_subrotundata"], "index": 112, "species": "Amphitetras_subrotundata", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["113 Stictodiscus_parallelus_fo_hexagona"], "index": 113, "species": "Stictodiscus_parallelus_fo_hexagona", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["114 Stictodiscus_parallelus_fo_hexagona"], "index": 114, "species": "Stictodiscus_parallelus_fo_hexagona", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["115 Stictodiscus_parallelus_fo_hexagona"], "index": 115, "species": "Stictodiscus_parallelus_fo_hexagona", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["116 Triceratium_pentacrinus_fo_quadrata"], "index": 116, "species": "Triceratium_pentacrinus_fo_quadrata", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["117 Triceratium_pentacrinus_fo_quadrata"], "index": 117, "species": "Triceratium_pentacrinus_fo_quadrata", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["118 Biddulphia_biddulphiana"], "index": 118, "species": "Biddulphia_biddulphiana", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["119 Triceratium_finnmarchicum"], "index": 119, "species": "Triceratium_finnmarchicum", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""}
+        ]
+    },
+    {
+        "image_url": "/static/label-images/4_Azores.png",
+        "image_width": "",
+        "image_height": "",
+        "info": [
+            {"label": ["88 Actinocyclus_sp_indet"], "index": 88, "species": "Actinocyclus_sp_indet", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["89 Endictya_oceanica"], "index": 89, "species": "Endictya_oceanica", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["90 Endictya_oceanica"], "index": 90, "species": "Endictya_oceanica", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["91 Endictya_oceanica"], "index": 91, "species": "Endictya_oceanica", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["92 Endictya_oceanica"], "index": 92, "species": "Endictya_oceanica", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["93 Endictya_oceanica"], "index": 93, "species": "Endictya_oceanica", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["94 Endictya_oceanica"], "index": 94, "species": "Endictya_oceanica", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["95 Endictya_oceanica"], "index": 95, "species": "Endictya_oceanica", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["96 Endictya_oceanica"], "index": 96, "species": "Endictya_oceanica", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["97 Biddulphia_biddulphiana"], "index": 97, "species": "Biddulphia_biddulphiana", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["98 Amphitetras_subrotundata"], "index": 98, "species": "Amphitetras_subrotundata", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["99 Amphitetras_subrotundata"], "index": 99, "species": "Amphitetras_subrotundata", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["100 Amphitetras_subrotundata"], "index": 100, "species": "Amphitetras_subrotundata", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""},
+            {"label": ["101 Amphitetras_subrotundata"], "index": 101, "species": "Amphitetras_subrotundata", "bbox": "", "yolo_bbox": "", "segmentation": "", "embeddings": ""}
+        ]
+    }
+]
+
+
+def load_saved_labels():
+    """Load saved labels for current session if they exist"""
+    save_path = os.path.join('static', 'labels', f'{SESSION_ID}.json')
+    if os.path.exists(save_path):
+        with open(save_path, 'r') as f:
+            return json.load(f)
+    return diatoms_data  # Return base data if no saved labels exist
+
+def save_labels(data):
+    """Save labels for current session"""
+    os.makedirs(os.path.join('static', 'labels'), exist_ok=True)
+    save_path = os.path.join('static', 'labels', f'{SESSION_ID}.json')
+    with open(save_path, 'w') as f:
+        json.dump(data, f, indent=4)
+
+@app.route('/label', methods=['GET', 'POST'])
+def label():
+    if request.method == 'POST':
+        updated_data = request.json
+        save_labels(updated_data)
+        return jsonify({'success': True})
+    
+    return render_template('label.html')
+
+@app.route('/api/diatoms', methods=['GET'])
+def get_diatoms():
+    image_index = request.args.get('index', 0, type=int)
+    
+    # Load current session's data
+    current_data = load_saved_labels()
+    
+    # Ensure index is within bounds
+    image_index = min(max(0, image_index), len(current_data) - 1)
+    
+    return jsonify({
+        'current_index': image_index,
+        'total_images': len(current_data),
+        'data': current_data[image_index]
+    })
+
+@app.route('/api/save', methods=['POST'])
+def save():
+    current_data = load_saved_labels()
+    image_index = request.json.get('image_index', 0)
+    updated_info = request.json.get('info', [])
+    
+    # Update only the info for the current image
+    current_data[image_index]['info'] = updated_info
+    
+    # Save the entire updated dataset
+    save_labels(current_data)
+    
+    return jsonify({'success': True})
+
+
+@app.route('/api/download', methods=['GET'])
+def download_labels():
+    """Download the saved labels file for current session"""
+    try:
+        save_path = os.path.join('static', 'labels', f'{SESSION_ID}.json')
+        
+        # Check if file exists
+        if not os.path.exists(save_path):
+            return jsonify({'error': 'No saved labels found'}), 404
+            
+        # Return the file as an attachment
+        return send_file(
+            save_path,
+            mimetype='application/json',
+            as_attachment=True,
+            download_name=f'diatom_labels_{SESSION_ID}.json'
+        )
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 
 
