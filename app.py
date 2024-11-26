@@ -9,7 +9,7 @@ import pandas as pd
 from modules.process_pdfs import process_pdf
 from modules.claude_ai import create_claude_prompt, encode_pdf_to_base64, create_messages, get_completion
 from modules.groq_llama import get_llama_paper_info
-from modules.gcp_ops import save_file_to_bucket, save_tracker_csv, initialize_paper_upload_tracker_df_from_gcp
+from modules.gcp_ops import save_file_to_bucket, save_tracker_csv, initialize_paper_upload_tracker_df_from_gcp, save_json_to_bucket
 # save_file_to_bucket(artifact_url, session_id, file_hash_num, bucket_name, subdir="papers"
 from datetime import datetime
 from modules.llm_ops import llm_parsed_output_from_text, create_messages, llm_with_JSON_output
@@ -42,6 +42,7 @@ SESSION_ID = 'eb9db0ca54e94dbc82cffdab497cde13'
 FILE_HASH_NUM = '8c583173bc904ce596d5de69ac432acb'
 PAPERS_BUCKET ='papers-diatoms'
 PAPERS_PROCESSED_BUCKET ='papers-diatoms-processed'
+PAPERS_BUCKET_LABELLING ='papers-diatoms-labelling'
 
 ALLOWED_EXTENSIONS = {'pdf'}
 
@@ -1140,20 +1141,133 @@ diatoms_data = [
 ]
 
 
+# def load_saved_labels():
+#     """Load saved labels for current session if they exist"""
+#     save_path = os.path.join('static', 'labels', f'{SESSION_ID}.json')
+#     if os.path.exists(save_path):
+#         with open(save_path, 'r') as f:
+#             return json.load(f)
+#     return diatoms_data  # Return base data if no saved labels exist
+
+# def save_labels(data):
+#     """Save labels for current session"""
+#     os.makedirs(os.path.join('static', 'labels'), exist_ok=True)
+#     save_path = os.path.join('static', 'labels', f'{SESSION_ID}.json')
+#     with open(save_path, 'w') as f:
+#         json.dump(data, f, indent=4)
+
+# @app.route('/label', methods=['GET', 'POST'])
+# def label():
+#     if request.method == 'POST':
+#         updated_data = request.json
+#         save_labels(updated_data)
+#         return jsonify({'success': True})
+    
+#     return render_template('label-react.html')
+
+# @app.route('/api/diatoms', methods=['GET'])
+# def get_diatoms():
+#     image_index = request.args.get('index', 0, type=int)
+    
+#     # Load current session's data
+#     current_data = load_saved_labels()
+    
+#     # Ensure index is within bounds
+#     image_index = min(max(0, image_index), len(current_data) - 1)
+    
+#     return jsonify({
+#         'current_index': image_index,
+#         'total_images': len(current_data),
+#         'data': current_data[image_index]
+#     })
+
+# @app.route('/api/save', methods=['POST'])
+# def save():
+#     try:
+#         current_data = load_saved_labels()
+#         image_index = request.json.get('image_index', 0)
+#         updated_info = request.json.get('info', [])
+        
+#         # Update only the info for the current image
+#         current_data[image_index]['info'] = updated_info
+        
+#         # Save the entire updated dataset
+#         save_labels(current_data)
+        
+#         return jsonify({
+#             'success': True,
+#             'message': 'Labels saved successfully',
+#             'timestamp': datetime.now().isoformat(),
+#             'saved_index': image_index
+#         })
+#     except Exception as e:
+#         return jsonify({
+#             'success': False,
+#             'error': str(e)
+#         }), 500
+
+
+
+# @app.route('/api/download', methods=['GET'])
+# def download_labels():
+#     """Download the saved labels file for current session"""
+#     try:
+#         save_path = os.path.join('static', 'labels', f'{SESSION_ID}.json')
+        
+#         # Check if file exists
+#         if not os.path.exists(save_path):
+#             return jsonify({'error': 'No saved labels found'}), 404
+            
+#         # Return the file as an attachment
+#         return send_file(
+#             save_path,
+#             mimetype='application/json',
+#             as_attachment=True,
+#             download_name=f'diatom_labels_{SESSION_ID}.json'
+#         )
+#     except Exception as e:
+#         return jsonify({'error': str(e)}), 500
+
+
+def get_gcp_json_url():
+    """Generate the public URL for the JSON file in GCP Storage"""
+    return f"https://storage.googleapis.com/{PAPERS_BUCKET_LABELLING}/labels/{SESSION_ID}/{SESSION_ID}.json"
+
 def load_saved_labels():
     """Load saved labels for current session if they exist"""
+    # First try to load from GCP
+    try:
+        json_public_url = get_gcp_json_url()
+        response = requests.get(json_public_url)
+        if response.status_code == 200:
+            return response.json()
+    except Exception as e:
+        print(f"Error loading from GCP: {e}")
+
+    # Fallback to local file if GCP fails
     save_path = os.path.join('static', 'labels', f'{SESSION_ID}.json')
     if os.path.exists(save_path):
         with open(save_path, 'r') as f:
             return json.load(f)
+    
     return diatoms_data  # Return base data if no saved labels exist
 
 def save_labels(data):
-    """Save labels for current session"""
+    """Save labels for current session to both local and GCP storage"""
+    # Ensure local directory exists
     os.makedirs(os.path.join('static', 'labels'), exist_ok=True)
-    save_path = os.path.join('static', 'labels', f'{SESSION_ID}.json')
-    with open(save_path, 'w') as f:
+    
+    # Save locally
+    local_save_path = os.path.join('static', 'labels', f'{SESSION_ID}.json')
+    with open(local_save_path, 'w') as f:
         json.dump(data, f, indent=4)
+    
+    # Save to GCP
+    try:
+        save_json_to_bucket(local_save_path, PAPERS_BUCKET_LABELLING, SESSION_ID)
+    except Exception as e:
+        print(f"Error saving to GCP: {e}")
+        # Continue execution even if GCP save fails
 
 @app.route('/label', methods=['GET', 'POST'])
 def label():
@@ -1180,21 +1294,6 @@ def get_diatoms():
         'data': current_data[image_index]
     })
 
-# @app.route('/api/save', methods=['POST'])
-# def save():
-#     current_data = load_saved_labels()
-#     image_index = request.json.get('image_index', 0)
-#     updated_info = request.json.get('info', [])
-    
-#     # Update only the info for the current image
-#     current_data[image_index]['info'] = updated_info
-    
-#     # Save the entire updated dataset
-#     save_labels(current_data)
-    
-#     return jsonify({'success': True})
-
-
 @app.route('/api/save', methods=['POST'])
 def save():
     try:
@@ -1212,7 +1311,8 @@ def save():
             'success': True,
             'message': 'Labels saved successfully',
             'timestamp': datetime.now().isoformat(),
-            'saved_index': image_index
+            'saved_index': image_index,
+            'gcp_url': get_gcp_json_url()
         })
     except Exception as e:
         return jsonify({
@@ -1220,27 +1320,49 @@ def save():
             'error': str(e)
         }), 500
 
-
-
 @app.route('/api/download', methods=['GET'])
 def download_labels():
     """Download the saved labels file for current session"""
     try:
-        save_path = os.path.join('static', 'labels', f'{SESSION_ID}.json')
+        # First try to download from GCP
+        try:
+            json_public_url = get_gcp_json_url()
+            response = requests.get(json_public_url)
+            if response.status_code == 200:
+                # Save the GCP data temporarily and send it
+                temp_path = os.path.join('static', 'labels', f'temp_{SESSION_ID}.json')
+                with open(temp_path, 'w') as f:
+                    json.dump(response.json(), f, indent=4)
+                
+                return send_file(
+                    temp_path,
+                    mimetype='application/json',
+                    as_attachment=True,
+                    download_name=f'diatom_labels_{SESSION_ID}.json'
+                )
+        except Exception as e:
+            print(f"Error downloading from GCP: {e}")
+
+        # Fallback to local file if GCP fails
+        local_save_path = os.path.join('static', 'labels', f'{SESSION_ID}.json')
         
         # Check if file exists
-        if not os.path.exists(save_path):
+        if not os.path.exists(local_save_path):
             return jsonify({'error': 'No saved labels found'}), 404
-            
+        
         # Return the file as an attachment
         return send_file(
-            save_path,
+            local_save_path,
             mimetype='application/json',
             as_attachment=True,
             download_name=f'diatom_labels_{SESSION_ID}.json'
         )
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+
+
 
 
 if __name__ == '__main__':

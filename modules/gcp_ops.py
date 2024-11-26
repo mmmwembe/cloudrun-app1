@@ -252,3 +252,39 @@ def get_public_urls2(bucket_name, session_id, file_hash_num):
         files.append(file_info)
     
     return files
+
+
+def save_json_to_bucket(local_file_path, bucket_name, session_id):
+    """
+    Save a local JSON file to a GCP bucket in the format {bucket_name}/labels/{session_id}/{session_id}.json.
+
+    Args:
+        local_file_path (str): The path to the local file to upload.
+        bucket_name (str): The name of the GCP bucket.
+        session_id (str): The session ID used to define the file structure.
+
+    Returns:
+        tuple: (blob_name, public_url) where blob_name is the path in the bucket and public_url is the public URL of the uploaded file.
+    """
+    try:
+        # Initialize the GCP storage client
+        client = storage.Client.from_service_account_info(json.loads(secret_json))
+        bucket = client.bucket(bucket_name)
+
+        # Create the full path in the bucket
+        blob_name = f"labels/{session_id}/{session_id}.json"
+        blob = bucket.blob(blob_name)
+
+        # Upload the file
+        blob.upload_from_filename(local_file_path)
+
+        # Generate the public URL
+        public_url = f"https://storage.googleapis.com/{bucket_name}/{blob_name}"
+
+        return public_url
+    except Exception as e:
+        print(f"Error uploading file to bucket '{bucket_name}': {e}")
+        return None, None
+    
+    
+    #public_url = f"https://storage.googleapis.com/{bucket_name}/labels/{SESSION_ID}/{SESSION_ID}.json""
