@@ -1180,19 +1180,46 @@ def get_diatoms():
         'data': current_data[image_index]
     })
 
+# @app.route('/api/save', methods=['POST'])
+# def save():
+#     current_data = load_saved_labels()
+#     image_index = request.json.get('image_index', 0)
+#     updated_info = request.json.get('info', [])
+    
+#     # Update only the info for the current image
+#     current_data[image_index]['info'] = updated_info
+    
+#     # Save the entire updated dataset
+#     save_labels(current_data)
+    
+#     return jsonify({'success': True})
+
+
 @app.route('/api/save', methods=['POST'])
 def save():
-    current_data = load_saved_labels()
-    image_index = request.json.get('image_index', 0)
-    updated_info = request.json.get('info', [])
-    
-    # Update only the info for the current image
-    current_data[image_index]['info'] = updated_info
-    
-    # Save the entire updated dataset
-    save_labels(current_data)
-    
-    return jsonify({'success': True})
+    try:
+        current_data = load_saved_labels()
+        image_index = request.json.get('image_index', 0)
+        updated_info = request.json.get('info', [])
+        
+        # Update only the info for the current image
+        current_data[image_index]['info'] = updated_info
+        
+        # Save the entire updated dataset
+        save_labels(current_data)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Labels saved successfully',
+            'timestamp': datetime.now().isoformat(),
+            'saved_index': image_index
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 
 
 @app.route('/api/download', methods=['GET'])
