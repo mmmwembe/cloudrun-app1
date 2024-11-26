@@ -1162,7 +1162,7 @@ def label():
         save_labels(updated_data)
         return jsonify({'success': True})
     
-    return render_template('label.html')
+    return render_template('label-react.html')
 
 @app.route('/api/diatoms', methods=['GET'])
 def get_diatoms():
@@ -1214,11 +1214,6 @@ def download_labels():
         )
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-
-
-
-
 
 
 if __name__ == '__main__':

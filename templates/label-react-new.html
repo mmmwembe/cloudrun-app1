@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diatom Labeling</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        function DiatomLabeler() {
+            const [imageIndex, setImageIndex] = React.useState(0);
+            const [totalImages, setTotalImages] = React.useState(0);
+            const [currentImageData, setCurrentImageData] = React.useState(null);
+            const [selectedDiatom, setSelectedDiatom] = React.useState(null);
+            const [isDrawing, setIsDrawing] = React.useState(false);
+            const [startPoint, setStartPoint] = React.useState({ x: 0, y: 0 });
+            const [currentBox, setCurrentBox] = React.useState(null);
+            
+            const canvasRef = React.useRef(null);
+            const imageRef = React.useRef(null);
+            const containerRef = React.useRef(null);
+
+            const getRandomColor = () => {
+                const colors = ['#2ecc71', '#e74c3c', '#3498db'];
+                return colors[Math.floor(Math.random() * colors.length)];
+            };
+
+            const loadImageData = async (index) => {
+                try {
+                    const response = await fetch(`/api/diatoms?index=${index}`);
+                    const data = await response.json();
+                    setCurrentImageData(data.data);
+                    setTotalImages(data.total_images);
+                    setImageIndex(data.current_index);
+                    setSelectedDiatom(null);
+                } catch (error) {
+                    console.error('Error loading image data:', error);
+                }
+            };
+
+            React.useEffect(() => {
+                loadImageData(imageIndex);
+            }, []);
+
+            const handleSave = async () => {
+                try {
+                    await fetch('/api/save', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            image_index: imageIndex,
+                            info: currentImageData.info
+                        })
+                    });
+                } catch (error) {
+                    console.error('Error saving data:', error);
+                }
+            };
+
+            const handleNext = () => {
+                if (imageIndex < totalImages - 1) {
+                    loadImageData(imageIndex + 1);
+                }
+            };
+
+            const handlePrevious = () => {
+                if (imageIndex > 0) {
+                    loadImageData(imageIndex - 1);
+                }
+            };
+
+            const drawAllBoundingBoxes = () => {
+                const canvas = canvasRef.current;
+                if (!canvas || !currentImageData) return;
+
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                currentImageData.info.forEach(diatom => {
+                    if (diatom.bbox) {
+                        const [x1, y1, x2, y2] = diatom.bbox.split(',').map(Number);
+                        ctx.strokeStyle = diatom.boxColor || getRandomColor();
+                        ctx.lineWidth = 3;
+                        ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+
+                        // Add index text
+                        ctx.font = '16px Arial';
+                        ctx.fillStyle = diatom.boxColor || getRandomColor();
+                        ctx.fillText(diatom.index.toString(), x1 + 5, y1 + 20);
+                    }
+                });
+
+                // Draw current box if drawing
+                if (currentBox) {
+                    ctx.strokeStyle = '#2ecc71';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(
+                        currentBox.x,
+                        currentBox.y,
+                        currentBox.width,
+                        currentBox.height
+                    );
+                }
+            };
+
+            React.useEffect(() => {
+                drawAllBoundingBoxes();
+            }, [currentImageData, currentBox, selectedDiatom]);
+
+            const updateDiatomBBox = (updatedDiatom) => {
+                if (!currentImageData) return;
+
+                const updatedInfo = currentImageData.info.map(diatom => 
+                    diatom.label[0] === updatedDiatom.label[0] ? updatedDiatom : diatom
+                );
+
+                setCurrentImageData({
+                    ...currentImageData,
+                    info: updatedInfo
+                });
+            };
+
+            const handleImageLoad = () => {
+                const canvas = canvasRef.current;
+                const container = containerRef.current;
+                if (canvas && container) {
+                    canvas.width = container.offsetWidth;
+                    canvas.height = container.offsetHeight;
+                    drawAllBoundingBoxes();
+                }
+            };
+
+            const handleMouseDown = (e) => {
+                if (!selectedDiatom) return;
+                
+                const rect = canvasRef.current.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                setIsDrawing(true);
+                setStartPoint({ x, y });
+            };
+
+            const handleMouseMove = (e) => {
+                if (!isDrawing) return;
+                
+                const rect = canvasRef.current.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                setCurrentBox({
+                    x: Math.min(x, startPoint.x),
+                    y: Math.min(y, startPoint.y),
+                    width: Math.abs(x - startPoint.x),
+                    height: Math.abs(y - startPoint.y)
+                });
+            };
+
+            const handleMouseUp = () => {
+                if (!isDrawing) return;
+                
+                setIsDrawing(false);
+                if (currentBox) {
+                    const bbox = `${currentBox.x},${currentBox.y},${currentBox.x + currentBox.width},${currentBox.y + currentBox.height}`;
+                    const boxColor = getRandomColor();
+                    
+                    const updatedDiatom = { ...selectedDiatom, bbox, boxColor };
+                    updateDiatomBBox(updatedDiatom);
+                    setSelectedDiatom(updatedDiatom);
+                }
+                setCurrentBox(null);
+            };
+
+            const handleDoubleClick = (e) => {
+                if (!selectedDiatom || !currentImageData) return;
+
+                const rect = canvasRef.current.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                const clickedBox = currentImageData.info.find(diatom => {
+                    if (!diatom.bbox) return false;
+                    const [x1, y1, x2, y2] = diatom.bbox.split(',').map(Number);
+                    return x >= x1 && x <= x2 && y >= y1 && y <= y2;
+                });
+
+                if (clickedBox) {
+                    const updatedDiatom = { ...clickedBox, bbox: '', boxColor: null };
+                    updateDiatomBBox(updatedDiatom);
+
+                    if (selectedDiatom.label[0] === clickedBox.label[0]) {
+                        setSelectedDiatom(updatedDiatom);
+                    }
+                }
+            };
+
+            if (!currentImageData) return <div>Loading...</div>;
+
+            return (
+                <div className="flex h-screen bg-gray-200">
+                    {/* Left Sidebar */}
+                    <div className="w-64 bg-gray-800 fixed h-full">
+                        <img 
+                            src="/static/diatomhub-images/logo/diatom_hub_5e.svg" 
+                            alt="DiatomHub Logo" 
+                            className="w-4/5 mx-auto mt-5"
+                        />
+                    </div>
+
+                    {/* Main Content */}
+                    <div className="flex-1 ml-64 mr-96">
+                        <div className="flex flex-col items-center justify-center min-h-screen p-5">
+                            <div className="text-4xl font-bold mb-8 text-gray-800">
+                                {selectedDiatom ? selectedDiatom.label[0] : 'Select a species'}
+                            </div>
+                            <div 
+                                ref={containerRef}
+                                className="relative w-full max-w-4xl"
+                            >
+                                <img
+                                    ref={imageRef}
+                                    src={currentImageData.image_url}
+                                    alt="Diatom Image"
+                                    className="w-full"
+                                    onLoad={handleImageLoad}
+                                />
+                                <canvas
+                                    ref={canvasRef}
+                                    className="absolute top-0 left-0 w-full h-full cursor-crosshair"
+                                    onMouseDown={handleMouseDown}
+                                    onMouseMove={handleMouseMove}
+                                    onMouseUp={handleMouseUp}
+                                    onDoubleClick={handleDoubleClick}
+                                />
+                            </div>
+
+                            {/* Navigation Buttons */}
+                            <div className="flex justify-center space-x-4 mt-6">
+                                <button 
+                                    onClick={handlePrevious}
+                                    disabled={imageIndex === 0}
+                                    className="bg-yellow-400 text-black px-8 py-3 rounded-lg font-bold disabled:opacity-50"
+                                >
+                                    Previous
+                                </button>
+                                <button 
+                                    onClick={handleSave}
+                                    className="bg-green-600 text-white px-12 py-3 rounded-lg font-bold"
+                                >
+                                    Save
+                                </button>
+                                <button 
+                                    onClick={() => window.location.href = '/api/download'}
+                                    className="bg-blue-600 text-white px-12 py-3 rounded-lg font-bold"
+                                >
+                                    Download
+                                </button>
+                                <button 
+                                    onClick={handleNext}
+                                    disabled={imageIndex === totalImages - 1}
+                                    className="bg-yellow-400 text-black px-8 py-3 rounded-lg font-bold disabled:opacity-50"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right Sidebar */}
+                    <div className="w-96 bg-gray-800 fixed right-0 h-full overflow-y-auto">
+                        <div className="text-2xl font-bold text-white text-center py-5 border-b border-gray-700">
+                            Labels
+                        </div>
+                        <ul>
+                            {currentImageData.info.map((diatom) => (
+                                <li
+                                    key={diatom.label[0]}
+                                    onClick={() => setSelectedDiatom(diatom)}
+                                    className={`
+                                        text-white p-3 cursor-pointer border-b border-gray-700 transition-colors
+                                        ${selectedDiatom?.label[0] === diatom.label[0] ? 'bg-green-500' : 'hover:bg-gray-700'}
+                                    `}
+                                >
+                                    {diatom.label[0]}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<DiatomLabeler />);
+    </script>
+</body>
+</html>
