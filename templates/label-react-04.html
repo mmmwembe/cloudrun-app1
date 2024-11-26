@@ -13,56 +13,6 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        function CircularProgress({ progress }) {
-            const radius = 20;
-            const circumference = 2 * Math.PI * radius;
-            const strokeDashoffset = circumference - (progress / 100) * circumference;
-            
-            return (
-                <svg className="transform -rotate-90 w-12 h-12">
-                    <circle
-                        className="text-gray-300"
-                        strokeWidth="4"
-                        stroke="currentColor"
-                        fill="transparent"
-                        r={radius}
-                        cx="24"
-                        cy="24"
-                    />
-                    <circle
-                        className="text-green-500"
-                        strokeWidth="4"
-                        strokeDasharray={circumference}
-                        strokeDashoffset={strokeDashoffset}
-                        strokeLinecap="round"
-                        stroke="currentColor"
-                        fill="transparent"
-                        r={radius}
-                        cx="24"
-                        cy="24"
-                    />
-                </svg>
-            );
-        }
-
-        function Toast({ message, onClose }) {
-            React.useEffect(() => {
-                const timer = setTimeout(() => {
-                    onClose();
-                }, 3000);
-                return () => clearTimeout(timer);
-            }, [onClose]);
-
-            return (
-                <div className="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2 animate-slide-up">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                    </svg>
-                    <span>{message}</span>
-                </div>
-            );
-        }
-
         function DiatomLabeler() {
             const [imageIndex, setImageIndex] = React.useState(0);
             const [totalImages, setTotalImages] = React.useState(0);
@@ -72,9 +22,6 @@
             const [startPoint, setStartPoint] = React.useState({ x: 0, y: 0 });
             const [currentBox, setCurrentBox] = React.useState(null);
             const [imageUrl, setImageUrl] = React.useState('');
-            const [isSaving, setIsSaving] = React.useState(false);
-            const [saveProgress, setSaveProgress] = React.useState(0);
-            const [showToast, setShowToast] = React.useState(false);
             
             const canvasRef = React.useRef(null);
             const imageRef = React.useRef(null);
@@ -114,40 +61,16 @@
             };
 
             const handleSave = async () => {
-                setIsSaving(true);
-                setSaveProgress(0);
-                
-                // Simulate progress
-                const progressInterval = setInterval(() => {
-                    setSaveProgress(prev => Math.min(prev + 10, 90));
-                }, 100);
-
                 try {
-                    const response = await fetch('/api/save', {
+                    await fetch('/api/save', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({ image_index: imageIndex, info: diatoms })
                     });
-                    
-                    const data = await response.json();
-                    
-                    clearInterval(progressInterval);
-                    setSaveProgress(100);
-                    
-                    if (data.success) {
-                        setShowToast(true);
-                    } else {
-                        throw new Error(data.error);
-                    }
                 } catch (error) {
                     console.error('Error saving data:', error);
-                } finally {
-                    setTimeout(() => {
-                        setIsSaving(false);
-                        setSaveProgress(0);
-                    }, 500);
                 }
             };
 
@@ -230,6 +153,9 @@
                     const bbox = `${currentBox.x},${currentBox.y},${currentBox.x + currentBox.width},${currentBox.y + currentBox.height}`;
                     const boxColor = getRandomColor();
                     
+                    // Create updated diatom object
+                    const updatedDiatom = { ...selectedDiatom, bbox, boxColor };
+                    
                     // Update local state
                     const updatedDiatoms = diatoms.map(d => 
                         d.label[0] === selectedDiatom.label[0] 
@@ -309,7 +235,7 @@
                                 />
                             </div>
                             
-                            {/* Navigation Buttons */}
+                            {/* Navigation Buttons with Hover Effects */}
                             <div className="flex justify-center space-x-4 mt-6">
                                 <button 
                                     onClick={handlePrevious}
@@ -320,14 +246,9 @@
                                 </button>
                                 <button 
                                     onClick={handleSave}
-                                    disabled={isSaving}
-                                    className="bg-green-600 text-white px-12 py-3 rounded-lg font-bold transform transition-all duration-200 hover:scale-105 hover:bg-green-500 hover:shadow-lg flex items-center justify-center space-x-2 min-w-[120px]"
+                                    className="bg-green-600 text-white px-12 py-3 rounded-lg font-bold transform transition-all duration-200 hover:scale-105 hover:bg-green-500 hover:shadow-lg"
                                 >
-                                    {isSaving ? (
-                                        <CircularProgress progress={saveProgress} />
-                                    ) : (
-                                        <span>Save</span>
-                                    )}
+                                    Save
                                 </button>
                                 <button 
                                     onClick={() => window.location.href = '/api/download'}
@@ -355,8 +276,6 @@
                             {diatoms.map((diatom) => (
                                 <li
                                     key={diatom.label[0]}
-                                    Untitled
-
                                     onClick={() => setSelectedDiatom(diatom)}
                                     className={`
                                         text-white p-3 cursor-pointer border-b border-gray-700 transition-colors
@@ -368,39 +287,9 @@
                             ))}
                         </ul>
                     </div>
-
-                    {/* Toast Notification */}
-                    {showToast && (
-                        <Toast 
-                            message="Labels saved successfully!" 
-                            onClose={() => setShowToast(false)} 
-                        />
-                    )}
                 </div>
             );
         }
-
-        // Add styles for animation
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slide-up {
-                from {
-                    transform: translateY(100%);
-                    opacity: 0;
-                }
-                to {
-                    transform: translateY(0);
-                    opacity: 1;
-                }
-            }
-            .animate-slide-up {
-                animation: slide-up 0.3s ease-out;
-            }
-            circle {
-                transition: stroke-dashoffset 0.3s ease;
-            }
-        `;
-        document.head.appendChild(style);
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<DiatomLabeler />);
