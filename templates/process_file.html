@@ -317,36 +317,59 @@
 
 
 
-    function downloadJSON() {
-    const jsonUrl = document.getElementById('processed_files_csv_url').textContent;
-    if (!jsonUrl) {
-        alert('No JSON URL available yet. Please wait for processing to complete.');
-        return;
-    }
-    
+function downloadJSON() {
+    // Show loading indicator
+    const loadingDiv = document.createElement('div');
+    loadingDiv.textContent = 'Downloading...';
+    loadingDiv.style.position = 'fixed';
+    loadingDiv.style.top = '50%';
+    loadingDiv.style.left = '50%';
+    loadingDiv.style.transform = 'translate(-50%, -50%)';
+    loadingDiv.style.padding = '1rem';
+    loadingDiv.style.backgroundColor = 'rgba(0,0,0,0.8)';
+    loadingDiv.style.color = 'white';
+    loadingDiv.style.borderRadius = '5px';
+    document.body.appendChild(loadingDiv);
+
     fetch('/download_papers_json/', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ json_url: jsonUrl })
+        }
     })
-    .then(response => response.blob())
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => {
+                throw new Error(err.error || 'Download failed');
+            });
+        }
+        return response.blob();
+    })
     .then(blob => {
+        // Create download link
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
+        a.style.display = 'none';
         a.href = url;
         a.download = `${SESSION_ID}.json`;
+        
+        // Trigger download
         document.body.appendChild(a);
         a.click();
+        
+        // Cleanup
         window.URL.revokeObjectURL(url);
         a.remove();
     })
     .catch(error => {
         console.error('Error downloading JSON:', error);
-        alert('Error downloading JSON file. Please try again.');
+        alert(`Error downloading JSON file: ${error.message}`);
+    })
+    .finally(() => {
+        // Remove loading indicator
+        loadingDiv.remove();
     });
-    }
+}
 
 
 
