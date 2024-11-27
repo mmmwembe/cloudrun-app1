@@ -228,17 +228,16 @@
         </button>
     </form>
 
-
-    <form id="downloadJSON" class="mt-4 d-flex justify-content-center">
+    <form action="/download_papers_json" method="get">
         <button 
             type="button" 
-            onclick="window.location.href='/'" 
             style="font-size: 2rem; padding: 1.5rem 3rem; border-radius: 0.75rem;" 
             class="btn btn-success"
         >
             Download JSON
         </button>
     </form>
+
 
     <script>
    
@@ -314,63 +313,6 @@
         // Start processing
         processNextFile();
     });
-
-
-
-function downloadJSON() {
-    // Show loading indicator
-    const loadingDiv = document.createElement('div');
-    loadingDiv.textContent = 'Downloading...';
-    loadingDiv.style.position = 'fixed';
-    loadingDiv.style.top = '50%';
-    loadingDiv.style.left = '50%';
-    loadingDiv.style.transform = 'translate(-50%, -50%)';
-    loadingDiv.style.padding = '1rem';
-    loadingDiv.style.backgroundColor = 'rgba(0,0,0,0.8)';
-    loadingDiv.style.color = 'white';
-    loadingDiv.style.borderRadius = '5px';
-    document.body.appendChild(loadingDiv);
-
-    fetch('/download_papers_json/', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            return response.json().then(err => {
-                throw new Error(err.error || 'Download failed');
-            });
-        }
-        return response.blob();
-    })
-    .then(blob => {
-        // Create download link
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = `${SESSION_ID}.json`;
-        
-        // Trigger download
-        document.body.appendChild(a);
-        a.click();
-        
-        // Cleanup
-        window.URL.revokeObjectURL(url);
-        a.remove();
-    })
-    .catch(error => {
-        console.error('Error downloading JSON:', error);
-        alert(`Error downloading JSON file: ${error.message}`);
-    })
-    .finally(() => {
-        // Remove loading indicator
-        loadingDiv.remove();
-    });
-}
-
 
 
     </script>

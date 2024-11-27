@@ -536,58 +536,34 @@ def go_to_processfile():
 #         'papers_json_public_url': safe_value(papers_json_public_url),  # Include the URL of the saved CSV
 #     }), 200
 
-@app.route('/download_papers_json/', methods=['POST'])
-def download_json():
-    tmp_file_path = None
-    try:
-        # Get the JSON URL from GCS
-        json_url = f"https://storage.googleapis.com/{PAPERS_BUCKET_JSON_FILES}/jsons_from_pdfs/{SESSION_ID}/{SESSION_ID}.json"
+# Directory to save temporary files
+TEMP_JSON_DIR = "static/temp-jsons"
+
+@app.route('/download_papers_json')
+def download_papers_json():
+    # Ensure the directory exists
+    if not os.path.exists(TEMP_JSON_DIR):
+        os.makedirs(TEMP_JSON_DIR)
+    
+    # Construct the JSON URL
+    json_url = f"https://storage.googleapis.com/{PAPERS_BUCKET_JSON_FILES}/jsons_from_pdfs/{SESSION_ID}/{SESSION_ID}.json"
+    local_file_path = os.path.join(TEMP_JSON_DIR, f"{SESSION_ID}.json")
+    
+    # Download the JSON file
+    response = requests.get(json_url)
+    if response.status_code == 200:
+        # Save the file locally
+        with open(local_file_path, 'wb') as file:
+            file.write(response.content)
         
-        # Download the JSON file from GCS
-        response = requests.get(json_url)
-        response.raise_for_status()  # Raise an exception for bad status codes
-
-        # Create a temporary file with proper encoding
-        with tempfile.NamedTemporaryFile(mode='w+b', delete=False, suffix='.json') as tmp_file:
-            tmp_file.write(response.content)
-            tmp_file_path = tmp_file.name
-
-        # Send the file
-        response = send_file(
-            tmp_file_path,
-            mimetype='application/json',
-            as_attachment=True,
-            download_name=f"{SESSION_ID}.json"
-        )
-
-        # Delete the temp file after sending
+        # Serve the file for download
         try:
-            os.unlink(tmp_file_path)
-        except Exception as e:
-            app.logger.error(f"Error removing temporary file: {e}")
-            # Continue with the response even if cleanup fails
-        
-        return response
-
-    except requests.RequestException as e:
-        # Clean up temp file if it exists
-        if tmp_file_path and os.path.exists(tmp_file_path):
-            try:
-                os.unlink(tmp_file_path)
-            except:
-                pass
-        app.logger.error(f"Error downloading from GCS: {e}")
-        return jsonify({'error': f'Failed to download file: {str(e)}'}), 500
-        
-    except Exception as e:
-        # Clean up temp file if it exists
-        if tmp_file_path and os.path.exists(tmp_file_path):
-            try:
-                os.unlink(tmp_file_path)
-            except:
-                pass
-        app.logger.error(f"Unexpected error: {e}")
-        return jsonify({'error': str(e)}), 500
+            return send_file(local_file_path, as_attachment=True)
+        finally:
+            # Ensure the file is deleted after sending
+            os.remove(local_file_path)
+    else:
+        return "Error: Unable to download the JSON file.", 500
 
 
 @app.route('/process_files/', methods=['POST'])
