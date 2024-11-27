@@ -539,7 +539,8 @@ def go_to_processfile():
 @app.route('/download_papers_json/', methods=['POST'])
 def download_json():
     try:
-        json_url = request.json.get('json_url')
+        #json_url = request.json.get('json_url')
+        json_url = f"https://storage.googleapis.com/{PAPERS_BUCKET_JSON_FILES}/jsons_from_pdfs/{SESSION_ID}/{SESSION_ID}.json"
         if not json_url:
             return jsonify({'error': 'No JSON URL provided'}), 400
 
