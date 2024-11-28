@@ -13,6 +13,40 @@
     <div id="root"></div>
 
     <script type="text/babel">
+        // Add DiatomeSelector Component
+        function DiatomeSelector({ selected, setSelected }) {
+            const options = [
+                { label: 'Diatom', value: 0 },
+                { label: 'Incomplete Diatom', value: 1 },
+                { label: 'Complete Diatom', value: 2 },
+                { label: 'Fragment Diatom', value: 3 },
+                { label: 'Blurred Diatom', value: 4 },
+                { label: 'Diatom SideView', value: 5 }
+            ];
+
+            return (
+                <div className="p-4">
+                    <div className="flex flex-wrap gap-6 items-center justify-center">
+                        {options.map((option) => (
+                            <label key={option.value} className="flex items-center space-x-2 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="diatom-type"
+                                    value={option.value}
+                                    checked={selected === option.value}
+                                    onChange={(e) => setSelected(Number(e.target.value))}
+                                    className="w-4 h-4 text-blue-600 cursor-pointer"
+                                />
+                                <span className="text-sm font-medium text-gray-700">
+                                    {option.label}
+                                </span>
+                            </label>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
         function CircularProgress({ progress }) {
             const radius = 20;
             const circumference = 2 * Math.PI * radius;
@@ -63,30 +97,6 @@
             );
         }
 
-
-        /**
-         * Converts bounding box coordinates and diatom type to YOLO format annotation string.
-         * Takes pixel coordinates and image dimensions and returns normalized values.
-         * Format: <class_id> <x_center> <y_center> <width> <height>
-         * where x_center, y_center, width, height are normalized to [0,1] by image dimensions.
-         * @param {number} diatom_selector_value - The diatom class ID (0-5)
-         * @param {number} x1 - Left coordinate of bounding box
-         * @param {number} y1 - Top coordinate of bounding box
-         * @param {number} x2 - Right coordinate of bounding box
-         * @param {number} y2 - Bottom coordinate of bounding box
-         * @param {number} image_width - Width of the image in pixels
-         * @param {number} image_height - Height of the image in pixels
-         * @returns {string} YOLO format annotation string
-         */
-        const generateYoloBbox = (diatom_selector_value, x1, y1, x2, y2, image_width, image_height) => {
-            const x_center = (x1 + x2) / (2 * image_width);
-            const y_center = (y1 + y2) / (2 * image_height);
-            const width = (x2 - x1) / image_width;
-            const height = (y2 - y1) / image_height;
-            return `${diatom_selector_value} ${x_center.toFixed(6)} ${y_center.toFixed(6)} ${width.toFixed(6)} ${height.toFixed(6)}`;
-        };
-
-
         function DiatomLabeler() {
             const [imageIndex, setImageIndex] = React.useState(0);
             const [totalImages, setTotalImages] = React.useState(0);
@@ -99,6 +109,7 @@
             const [isSaving, setIsSaving] = React.useState(false);
             const [saveProgress, setSaveProgress] = React.useState(0);
             const [showToast, setShowToast] = React.useState(false);
+            const [selectedType, setSelectedType] = React.useState(2); // Default to Complete Diatom
             
             const canvasRef = React.useRef(null);
             const imageRef = React.useRef(null);
@@ -141,7 +152,6 @@
                 setIsSaving(true);
                 setSaveProgress(0);
                 
-                // Simulate progress
                 const progressInterval = setInterval(() => {
                     setSaveProgress(prev => Math.min(prev + 10, 90));
                 }, 100);
@@ -152,7 +162,11 @@
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({ image_index: imageIndex, info: diatoms })
+                        body: JSON.stringify({ 
+                            image_index: imageIndex, 
+                            info: diatoms,
+                            diatom_type: selectedType
+                        })
                     });
                     
                     const data = await response.json();
@@ -246,7 +260,6 @@
                 });
             };
 
-
             const handleMouseUp = () => {
                 if (!isDrawing) return;
                 
@@ -255,31 +268,14 @@
                     const bbox = `${currentBox.x},${currentBox.y},${currentBox.x + currentBox.width},${currentBox.y + currentBox.height}`;
                     const boxColor = getRandomColor();
                     
-                    // Get image dimensions from imageRef
-                    const imageWidth = imageRef.current.naturalWidth;
-                    const imageHeight = imageRef.current.naturalHeight;
-                    
-                    // Generate YOLO bbox
-                    const yolo_bbox = generateYoloBbox(
-                        selectedType,  // Using the diatom selector value
-                        currentBox.x,
-                        currentBox.y,
-                        currentBox.x + currentBox.width,
-                        currentBox.y + currentBox.height,
-                        imageWidth,
-                        imageHeight
-                    );
-                    
-                    // Update both bbox and yolo_bbox
                     const updatedDiatoms = diatoms.map(d => 
                         d.label[0] === selectedDiatom.label[0] 
-                            ? { ...d, bbox, yolo_bbox, boxColor } 
+                            ? { ...d, bbox, boxColor } 
                             : d
                     );
                     setDiatoms(updatedDiatoms);
                     
-                    // Update selected diatom
-                    setSelectedDiatom(prev => ({ ...prev, bbox, yolo_bbox, boxColor }));
+                    setSelectedDiatom(prev => ({ ...prev, bbox, boxColor }));
                 }
                 setCurrentBox(null);
             };
@@ -298,68 +294,18 @@
                 });
 
                 if (clickedBox) {
-                    // Clear both bbox and yolo_bbox
                     const updatedDiatoms = diatoms.map(d => 
                         d.label[0] === clickedBox.label[0] 
-                            ? { ...d, bbox: '', yolo_bbox: '', boxColor: null } 
+                            ? { ...d, bbox: '', boxColor: null } 
                             : d
                     );
                     setDiatoms(updatedDiatoms);
 
                     if (selectedDiatom.label[0] === clickedBox.label[0]) {
-                        setSelectedDiatom(prev => ({ ...prev, bbox: '', yolo_bbox: '', boxColor: null }));
+                        setSelectedDiatom(prev => ({ ...prev, bbox: '', boxColor: null }));
                     }
                 }
             };
-
-            // const handleMouseUp = () => {
-            //     if (!isDrawing) return;
-                
-            //     setIsDrawing(false);
-            //     if (currentBox) {
-            //         const bbox = `${currentBox.x},${currentBox.y},${currentBox.x + currentBox.width},${currentBox.y + currentBox.height}`;
-            //         const boxColor = getRandomColor();
-                    
-            //         // Update local state
-            //         const updatedDiatoms = diatoms.map(d => 
-            //             d.label[0] === selectedDiatom.label[0] 
-            //                 ? { ...d, bbox, boxColor } 
-            //                 : d
-            //         );
-            //         setDiatoms(updatedDiatoms);
-                    
-            //         // Update selected diatom
-            //         setSelectedDiatom(prev => ({ ...prev, bbox, boxColor }));
-            //     }
-            //     setCurrentBox(null);
-            // };
-
-            // const handleDoubleClick = (e) => {
-            //     if (!selectedDiatom) return;
-
-            //     const rect = canvasRef.current.getBoundingClientRect();
-            //     const x = e.clientX - rect.left;
-            //     const y = e.clientY - rect.top;
-
-            //     const clickedBox = diatoms.find(diatom => {
-            //         if (!diatom.bbox) return false;
-            //         const [x1, y1, x2, y2] = diatom.bbox.split(',').map(Number);
-            //         return x >= x1 && x <= x2 && y >= y1 && y <= y2;
-            //     });
-
-            //     if (clickedBox) {
-            //         const updatedDiatoms = diatoms.map(d => 
-            //             d.label[0] === clickedBox.label[0] 
-            //                 ? { ...d, bbox: '', boxColor: null } 
-            //                 : d
-            //         );
-            //         setDiatoms(updatedDiatoms);
-
-            //         if (selectedDiatom.label[0] === clickedBox.label[0]) {
-            //             setSelectedDiatom(prev => ({ ...prev, bbox: '', boxColor: null }));
-            //         }
-            //     }
-            // };
 
             return (
                 <div className="flex h-screen bg-gray-200">
@@ -375,12 +321,19 @@
                     {/* Main Content */}
                     <div className="flex-1 ml-64 mr-96">
                         <div className="flex flex-col items-center justify-center min-h-screen p-5">
-                            <div className="text-4xl font-bold mb-8 text-gray-800">
+                            <div className="text-4xl font-bold mb-4 text-gray-800">
                                 {selectedDiatom ? selectedDiatom.label[0] : 'Select a species'}
                             </div>
+                            
+                            {/* Add DiatomeSelector below the title */}
+                            <DiatomeSelector 
+                                selected={selectedType}
+                                setSelected={setSelectedType}
+                            />
+                            
                             <div 
                                 ref={containerRef}
-                                className="relative w-full max-w-4xl"
+                                className="relative w-full max-w-4xl mt-4"
                             >
                                 <img
                                     ref={imageRef}
@@ -400,6 +353,7 @@
                             </div>
                             
                             {/* Navigation Buttons */}
+
                             <div className="flex justify-center space-x-4 mt-6">
                                 <button 
                                     onClick={handlePrevious}
