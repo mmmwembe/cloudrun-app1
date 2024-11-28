@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 import pandas as pd
 from modules.process_pdfs import process_pdf
 from modules.claude_ai import create_claude_prompt, encode_pdf_to_base64, create_messages, get_completion
-from modules.groq_llama import get_llama_paper_info
+# from modules.groq_llama import get_llama_paper_info
 from modules.gcp_ops import save_file_to_bucket, save_tracker_csv, initialize_paper_upload_tracker_df_from_gcp, save_json_to_bucket, save_paper_json_files, load_paper_json_files
 # save_file_to_bucket(artifact_url, session_id, file_hash_num, bucket_name, subdir="papers"
 from datetime import datetime
@@ -993,7 +993,8 @@ def extract_data_with_claude():
         # claude_completion = get_completion(claude_msg)  
         
         
-        claude_completion = get_llama_paper_info(test_pdf_path)
+        # claude_completion = get_llama_paper_info(test_pdf_path)
+        claude_completion =""
         
         # Return the Claude completion response
         return jsonify({'claude_completion': claude_completion})
