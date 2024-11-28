@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Get the Google service account JSON from environment variable
-GROQ_API_KEY = os.getenv('GROQ_API_KEY')
+GROQ_API_KEY = os.getenv('GROQ_API_KEY2')
 
 LLM_MODEL = "llama3-8b-8192"
 MODEL_TEMPERATURE = 0.5
