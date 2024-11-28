@@ -592,7 +592,9 @@ def process_files():
         # Extract information from PDF
         result = extract_images_and_metadata_from_pdf(public_url, SESSION_ID, BUCKET_EXTRACTED_IMAGES)
         pdf_text_content = extract_text_from_pdf(public_url)
-        llm_json_output = llm_with_JSON_output(pdf_text_content)
+        
+        #llm_json_output = llm_with_JSON_output(pdf_text_content)
+        llm_json_output =""
         
         # Apply safe_value to llm_json_output
         llm_json_output = safe_value(llm_json_output)
