@@ -9,10 +9,10 @@ Pillow
 anthropic
 PyPDF2
 pypdf
-Groq
+Groq==0.11.0
 requests
 beautifulsoup4
-langchain-community
+langchain-community==0.3.4
 google-search-results
-langchain
-langchain_groq
+langchain==0.3.6
+langchain_groq==0.2.0

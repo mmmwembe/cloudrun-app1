@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Installed Packages</title>
+</head>
+<body>
+    <h1>Installed Python Packages</h1>
+    <ul>
+        {% for name, version in packages.items() %}
+            <li>{{ name }}: {{ version }}</li>
+        {% endfor %}
+    </ul>
+    <form action="/download_installed_pkgs" method="get">
+        <button type="submit">Download Installed Packages</button>
+    </form>
+</body>
+</html>

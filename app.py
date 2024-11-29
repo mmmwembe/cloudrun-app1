@@ -16,6 +16,7 @@ from datetime import datetime
 from modules.pdf_image_and_metadata_handler import extract_images_and_metadata_from_pdf
 from modules.pandas_and_gcp import save_df_to_gcs, load_or_initialize_processed_files_df, update_processed_files_df_tracking
 from modules.process_files_df import update_process_files_pd, PROCESS_FILES_PD, validate_update_arguments
+from modules.installed_packages import get_installed_packages
 import requests
 # from langchain_community.document_loaders import PyPDFLoader
 import tempfile
@@ -1469,6 +1470,52 @@ def download_labels():
         )
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+
+
+
+@app.route('/modules')
+def modules():
+    # Get the installed packages
+    installed_packages = get_installed_packages()
+    
+    # Render the packages in the modules.html template
+    return render_template('modules.html', packages=installed_packages)
+
+@app.route('/download_installed_pkgs')
+def download_installed_pkgs():
+    # Get the installed packages
+    installed_packages = get_installed_packages()
+    
+    # Format the data as text
+    formatted_data = "\n".join(f"{name}: {version}" for name, version in installed_packages.items())
+    
+    # Create the filename with the current date
+    current_date = datetime.now().strftime('%m-%d-%y')
+    filename = f"Installed_Packages_{current_date}.txt"
+    file_path = os.path.join("temp_uploads", filename)
+    os.makedirs("temp_uploads", exist_ok=True)
+    
+    # Write the data to the file
+    with open(file_path, 'w') as file:
+        file.write(formatted_data)
+    
+    # Return the file for download
+    return send_file(file_path, as_attachment=True)
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
