@@ -22,4 +22,5 @@ RUN mkdir -p templates temp_uploads
 RUN chmod 777 temp_uploads
 
 # The command to run the application
-CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 app:app
+#CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 app:app
+CMD exec gunicorn --bind 0.0.0.0:${PORT:-5000} --workers 1 --threads 8 --timeout 0 --access-logfile - --error-logfile - app:app
