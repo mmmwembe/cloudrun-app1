@@ -596,8 +596,8 @@ def process_files():
         #llm_json_output = llm_with_JSON_output(pdf_text_content)
         llm_json_output =""
         
-        # Apply safe_value to llm_json_output
-        llm_json_output = safe_value(llm_json_output)
+        # # Apply safe_value to llm_json_output
+        # llm_json_output = safe_value(llm_json_output)
         
         # Get citation
         citation = get_default_citation()
