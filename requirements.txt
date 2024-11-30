@@ -1,18 +1,18 @@
-flask==3.0.0
-gunicorn==21.1.0
-python-dotenv==1.0.0
-pandas
-google-cloud-storage
-PyMuPDF
+Flask==3.1.0
+gunicorn==23.0.0
+python-dotenv==1.0.1
+pandas==2.2.3
+google-cloud-storage==2.18.2
+PyMuPDF==1.24.14
 Werkzeug>=2.2.2
-Pillow
-anthropic
-PyPDF2
-pypdf
+Pillow==11.0.0
+anthropic==0.40.0
+PyPDF2==2 3.0.1
+pypdf==5.1.0
 Groq==0.11.0
-requests
-beautifulsoup4
+requests==2.32.3
+beautifulsoup4==4 4.12.3
 langchain-community==0.3.4
-google-search-results
+google-search-results==2.4.2
 langchain==0.3.6
 langchain_groq==0.2.0

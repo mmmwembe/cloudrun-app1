@@ -11,9 +11,7 @@ load_dotenv()
 api_key = os.getenv('ANTHROPIC_API_KEY')
 
 # Initialize Anthropic client
-client = Anthropic(
-    api_key=api_key
-)
+client = Anthropic(api_key=api_key)
 
 # Model configuration
 MODEL_NAME = "claude-3-5-sonnet-20241022"
@@ -125,27 +123,30 @@ def get_completion(messages):
     except Exception as e:
         return {"error": str(e)}
 
-def main():
+
+def claude_paper_info_processor(pdf_text_content):
     """
-    Main function to orchestrate the diatom data processing
-    """
-    # Get the prompt
-    prompt = create_claude_prompt()
+    Process PDF text content using Claude API to extract diatom information.
     
-    # Example usage with pdf_text_content
-    pdf_text_content = """
-    [Your PDF text content will go here]
-    """
-    
-    # Create messages
-    messages = create_messages(pdf_text_content, prompt)
-    
-    # Get completion
-    result = get_completion(messages)
-    
-    # Save the result to a file
-    with open('diatom_data.json', 'w') as f:
-        f.write(result)
+    Args:
+        pdf_text_content (str): The extracted text from the PDF
         
-if __name__ == "__main__":
-    main()
+    Returns:
+        str: JSON string containing the processed diatom information or error message
+    """
+    try:
+        # Create the structured prompt
+        prompt = create_claude_prompt()
+        
+        # Create messages for Claude
+        messages = create_messages(pdf_text_content, prompt)
+        
+        # Get completion from Claude
+        result = get_completion(messages)
+        
+        return result
+        
+    except Exception as e:
+        return json.dumps({
+            "error": f"Error processing paper information: {str(e)}"
+        }, indent=2)
