@@ -1505,22 +1505,5 @@ def download_installed_pkgs():
     return send_file(file_path, as_attachment=True)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.getenv('PORT', 8080)))
